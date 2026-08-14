@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::Value;
@@ -71,15 +71,15 @@ fn ensure_dsh_home() -> Result<PathBuf, String> {
     Ok(home)
 }
 
-fn settings_path(home: &PathBuf) -> PathBuf {
+fn settings_path(home: &Path) -> PathBuf {
     home.join(SETTINGS_FILE)
 }
 
-fn credentials_path(home: &PathBuf) -> PathBuf {
+fn credentials_path(home: &Path) -> PathBuf {
     home.join(CREDENTIALS_FILE)
 }
 
-fn read_yaml_map(path: &PathBuf) -> Result<BTreeMap<String, Value>, String> {
+fn read_yaml_map(path: &Path) -> Result<BTreeMap<String, Value>, String> {
     if !path.exists() {
         return Ok(BTreeMap::new());
     }
@@ -106,7 +106,7 @@ fn read_yaml_map(path: &PathBuf) -> Result<BTreeMap<String, Value>, String> {
     }
 }
 
-fn write_yaml_map(path: &PathBuf, map: &BTreeMap<String, Value>) -> Result<(), String> {
+fn write_yaml_map(path: &Path, map: &BTreeMap<String, Value>) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| format!("无法创建目录: {error}"))?;
     }
@@ -114,7 +114,7 @@ fn write_yaml_map(path: &PathBuf, map: &BTreeMap<String, Value>) -> Result<(), S
     fs::write(path, raw).map_err(|error| format!("写入 {} 失败: {error}", path.display()))
 }
 
-fn read_credentials(home: &PathBuf) -> Result<BTreeMap<String, String>, String> {
+fn read_credentials(home: &Path) -> Result<BTreeMap<String, String>, String> {
     let path = credentials_path(home);
     if !path.exists() {
         return Ok(BTreeMap::new());
@@ -140,7 +140,7 @@ fn read_credentials(home: &PathBuf) -> Result<BTreeMap<String, String>, String> 
     Ok(out)
 }
 
-fn write_credentials(home: &PathBuf, credentials: &BTreeMap<String, String>) -> Result<(), String> {
+fn write_credentials(home: &Path, credentials: &BTreeMap<String, String>) -> Result<(), String> {
     let path = credentials_path(home);
     if credentials.is_empty() {
         if path.exists() {

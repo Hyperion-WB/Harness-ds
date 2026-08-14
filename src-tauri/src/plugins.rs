@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use serde::{Deserialize, Serialize};
@@ -83,15 +83,15 @@ fn ensure_dsh_home() -> Result<PathBuf, String> {
     Ok(home)
 }
 
-fn profile_dir(home: &PathBuf) -> PathBuf {
+fn profile_dir(home: &Path) -> PathBuf {
     home.join("profiles").join(PROFILE)
 }
 
-fn home_patch_path(home: &PathBuf) -> PathBuf {
+fn home_patch_path(home: &Path) -> PathBuf {
     home.join("cordis.patch.yml")
 }
 
-fn read_json_object(path: &PathBuf) -> Result<serde_json::Value, String> {
+fn read_json_object(path: &Path) -> Result<serde_json::Value, String> {
     if !path.exists() {
         return Ok(serde_json::json!({}));
     }
@@ -99,7 +99,7 @@ fn read_json_object(path: &PathBuf) -> Result<serde_json::Value, String> {
     serde_json::from_str(&raw).map_err(|error| format!("解析 {} 失败: {error}", path.display()))
 }
 
-fn read_patch_document(path: &PathBuf) -> Result<Vec<Value>, String> {
+fn read_patch_document(path: &Path) -> Result<Vec<Value>, String> {
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -116,7 +116,7 @@ fn read_patch_document(path: &PathBuf) -> Result<Vec<Value>, String> {
     }
 }
 
-fn write_patch_document(path: &PathBuf, items: &[Value]) -> Result<(), String> {
+fn write_patch_document(path: &Path, items: &[Value]) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|error| format!("无法创建目录: {error}"))?;
     }
@@ -214,7 +214,7 @@ fn extract_mcp_servers(patch: &[Value]) -> Vec<McpServer> {
     servers
 }
 
-fn list_packages(profile: &PathBuf) -> Result<(Vec<PluginPackage>, Vec<String>), String> {
+fn list_packages(profile: &Path) -> Result<(Vec<PluginPackage>, Vec<String>), String> {
     let package_json = read_json_object(&profile.join("package.json"))?;
     let mut bundles = Vec::new();
     if let Some(list) = package_json

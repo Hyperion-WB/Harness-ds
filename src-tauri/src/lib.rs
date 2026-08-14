@@ -14,7 +14,7 @@ use tauri::menu::{MenuBuilder, MenuItemBuilder};
 use tauri::tray::TrayIconBuilder;
 use tauri::{Emitter, Manager, WindowEvent};
 use tauri_plugin_autostart::MacosLauncher;
-use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
 use tauri_plugin_window_state::StateFlags;
 
 use commands::AppState;
@@ -45,10 +45,7 @@ fn schedule_agent_auto_update(app: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         // Initial delay so UI can bootstrap first.
         tokio::time::sleep(Duration::from_secs(8)).await;
-        loop {
-            let Some(state) = app.try_state::<AppState>() else {
-                break;
-            };
+        while let Some(state) = app.try_state::<AppState>() {
             let settings = match state.settings.lock() {
                 Ok(guard) => guard.clone(),
                 Err(_) => break,

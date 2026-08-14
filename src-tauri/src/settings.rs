@@ -112,6 +112,7 @@ pub fn save_settings(settings: &AppSettings) -> Result<(), String> {
     fs::write(&path, raw).map_err(|error| format!("写入设置失败: {error}"))
 }
 
+#[allow(dead_code)]
 pub fn get_api_key(settings: &AppSettings) -> Result<Option<String>, String> {
     get_provider_key(settings, "deepseek")
 }
