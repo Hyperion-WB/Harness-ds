@@ -1,0 +1,137 @@
+.dshg-tool-card {
+  margin: 8px 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  font-size: 0.82rem;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  &.is-running,
+  &.is-calling {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.03);
+  }
+
+  &.is-failed {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.03);
+  }
+
+  &.is-completed {
+    border-color: rgba(34, 197, 94, 0.2);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__icon-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #60a5fa;
+  }
+
+  &__name {
+    font-weight: 500;
+    color: var(--dshg-text-primary, #f1f5f9);
+  }
+
+  &__id {
+    font-family: var(--dshg-font-mono, monospace);
+    font-size: 0.72rem;
+    color: var(--dshg-text-secondary, #64748b);
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--dshg-text-secondary, #94a3b8);
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+
+    .is-success {
+      color: #22c55e;
+    }
+    .is-error {
+      color: #ef4444;
+    }
+    .is-spinning {
+      color: #3b82f6;
+      animation: spin 1s linear infinite;
+    }
+  }
+
+  &__body {
+    padding: 10px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    color: var(--dshg-text-secondary, #94a3b8);
+    font-weight: 500;
+
+    &.is-error {
+      color: #ef4444;
+    }
+  }
+
+  &__code {
+    margin: 0;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 6px;
+    font-family: var(--dshg-font-mono, ui-monospace, monospace);
+    font-size: 0.76rem;
+    color: #cbd5e1;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 280px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+
+    &.dshg-tool-card__output {
+      color: #a7f3d0;
+    }
+
+    &.is-error-text {
+      color: #fca5a5;
+    }
+  }
+}

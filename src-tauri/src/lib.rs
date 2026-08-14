@@ -146,6 +146,9 @@ pub fn run() {
             commands::open_in_editor,
             commands::open_in_terminal,
             commands::reveal_in_file_manager,
+            commands::get_storage_info,
+            commands::clear_cache,
+            commands::open_storage_dir,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

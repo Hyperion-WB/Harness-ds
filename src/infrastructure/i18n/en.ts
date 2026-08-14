@@ -77,6 +77,7 @@ export const en: Record<keyof typeof zh, string> = {
   "settings.tab.models": "Models",
   "settings.tab.plugins": "Plugins & MCP",
   "settings.tab.agent": "Agent Core",
+  "settings.tab.storage": "Storage & Cache",
   "settings.tab.appearance": "Appearance",
   "settings.models": "Model Providers",
   "settings.apiKeyPresent": "Configured",

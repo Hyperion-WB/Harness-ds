@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   Bot,
   Cpu,
+  HardDrive,
   Layers,
   Palette,
   Puzzle,
@@ -14,13 +15,13 @@ import { useSlidingPill } from "@/app/hooks/useSlidingPill";
 import { ModelsSection } from "./ModelsSection";
 import { AgentPresetsSection } from "./AgentPresetsSection";
 import { PluginsSection } from "./PluginsSection";
+import { StorageSection } from "./StorageSection";
 import type { DoctorReport, Theme } from "@/shared/types";
 import "./SettingsScene.scss";
 
 const THEMES: Theme[] = ["dark", "light", "system"];
 
-type SettingsTab = "all" | "models" | "presets" | "plugins" | "agent" | "appearance";
-
+type SettingsTab = "all" | "models" | "presets" | "plugins" | "agent" | "storage" | "appearance";
 
 export function SettingsScene() {
   const { t } = useI18n();
@@ -47,7 +48,6 @@ export function SettingsScene() {
   const [channelDraft, setChannelDraft] = useState(agentChannel);
   const [busy, setBusy] = useState(false);
   const [doctor, setDoctor] = useState<DoctorReport | null>(null);
-
 
   const { trackRef: themeTrackRef, pill: themePill } = useSlidingPill<HTMLDivElement>(theme);
   const { trackRef: tabTrackRef, pill: tabPill } = useSlidingPill<HTMLDivElement>(activeTab);
@@ -106,6 +106,7 @@ export function SettingsScene() {
               { id: "presets" as const, label: t("settings.tab.presets"), icon: Bot },
               { id: "plugins" as const, label: t("settings.tab.plugins"), icon: Puzzle },
               { id: "agent" as const, label: t("settings.tab.agent"), icon: Cpu },
+              { id: "storage" as const, label: "存储与缓存", icon: HardDrive },
               { id: "appearance" as const, label: t("settings.tab.appearance"), icon: Palette },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -132,6 +133,7 @@ export function SettingsScene() {
           {(activeTab === "all" || activeTab === "models") && <ModelsSection />}
           {(activeTab === "all" || activeTab === "presets") && <AgentPresetsSection />}
           {(activeTab === "all" || activeTab === "plugins") && <PluginsSection />}
+          {(activeTab === "all" || activeTab === "storage") && <StorageSection />}
 
           {(activeTab === "all" || activeTab === "appearance") && (
             <section>

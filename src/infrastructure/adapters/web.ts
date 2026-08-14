@@ -277,5 +277,30 @@ export const webAdapter: HostAdapter = {
   async revealInFileManager(path: string) {
     console.info("[WebPreview] Reveal in file manager:", path);
   },
+  async getStorageInfo(): Promise<import("@/shared/types").StorageInfo> {
+    return {
+      agentPrefixPath: "C:\\Users\\AppData\\Local\\deepseek-harness-gui\\agent-prefix",
+      agentPrefixSizeBytes: 245 * 1024 * 1024,
+      dshHomePath: "C:\\Users\\.dsh",
+      dshHomeSizeBytes: 42 * 1024 * 1024,
+      configDirPath: "C:\\Users\\AppData\\Roaming\\deepseek-harness-gui",
+      configDirSizeBytes: 15 * 1024,
+      cacheSizeBytes: 12 * 1024 * 1024,
+    };
+  },
+  async clearCache(): Promise<import("@/shared/types").StorageInfo> {
+    return {
+      agentPrefixPath: "C:\\Users\\AppData\\Local\\deepseek-harness-gui\\agent-prefix",
+      agentPrefixSizeBytes: 245 * 1024 * 1024,
+      dshHomePath: "C:\\Users\\.dsh",
+      dshHomeSizeBytes: 42 * 1024 * 1024,
+      configDirPath: "C:\\Users\\AppData\\Roaming\\deepseek-harness-gui",
+      configDirSizeBytes: 15 * 1024,
+      cacheSizeBytes: 0,
+    };
+  },
+  async openStorageDir(path: string) {
+    console.info("[WebPreview] Open storage directory:", path);
+  },
 };
 

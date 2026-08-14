@@ -1,0 +1,224 @@
+.dshg-chat-input-box {
+  position: relative;
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 20px 20px 20px;
+}
+
+.dshg-slash-menu {
+  position: absolute;
+  bottom: calc(100% - 10px);
+  left: 20px;
+  right: 20px;
+  max-width: 380px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  overflow: hidden;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.15s ease-out;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 9px 12px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+
+    &:hover,
+    &.is-selected {
+      background: rgba(59, 130, 246, 0.15);
+    }
+  }
+
+  &__cmd {
+    font-family: var(--dshg-font-mono, monospace);
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #60a5fa;
+  }
+
+  &__desc {
+    font-size: 0.76rem;
+    color: #94a3b8;
+  }
+}
+
+.dshg-chat-input-wrapper {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 14px 10px 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow: 0 6px 24px rgba(59, 130, 246, 0.15);
+  }
+}
+
+.dshg-chat-textarea {
+  width: 100%;
+  min-height: 28px;
+  max-height: 180px;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--dshg-text-primary, #fff);
+  padding: 0;
+
+  &::placeholder {
+    color: rgba(148, 163, 184, 0.6);
+  }
+}
+
+.dshg-chat-input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.dshg-chat-input-selectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dshg-input-selector-box {
+  position: relative;
+}
+
+.dshg-input-tag-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--dshg-text-secondary, #cbd5e1);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+}
+
+.dshg-input-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 160px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.dshg-input-dropdown-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  color: var(--dshg-text-secondary, #cbd5e1);
+  font-size: 0.78rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15);
+    color: #fff;
+  }
+
+  &.is-selected {
+    background: rgba(59, 130, 246, 0.25);
+    color: #60a5fa;
+    font-weight: 600;
+  }
+}
+
+.dshg-chat-input-actions {
+  display: flex;
+  align-items: center;
+}
+
+.dshg-send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &.is-active {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+
+    &:hover {
+      background: #2563eb;
+    }
+  }
+
+  &.is-stop {
+    background: #ef4444;
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+
+    &:hover {
+      background: #dc2626;
+    }
+  }
+}

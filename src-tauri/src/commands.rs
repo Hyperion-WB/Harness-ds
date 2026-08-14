@@ -75,6 +75,7 @@ pub struct SettingsPatch {
     pub agent_auto_update: Option<bool>,
     pub auto_start: Option<bool>,
     pub global_shortcut_enabled: Option<bool>,
+    pub dsh_home_override: Option<String>,
 }
 
 fn lock_settings(state: &AppState) -> Result<std::sync::MutexGuard<'_, AppSettings>, String> {
@@ -129,6 +130,13 @@ pub async fn save_settings_patch(
     if let Some(value) = patch.global_shortcut_enabled {
         settings.global_shortcut_enabled = value;
         apply_global_shortcut(&app, value)?;
+    }
+    if let Some(value) = patch.dsh_home_override {
+        settings.dsh_home_override = if value.trim().is_empty() {
+            None
+        } else {
+            Some(value)
+        };
     }
     save_settings(&settings)?;
     let mut snapshot = settings.clone();
@@ -511,4 +519,114 @@ pub async fn reveal_in_file_manager(path: String) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StorageInfo {
+    pub agent_prefix_path: String,
+    pub agent_prefix_size_bytes: u64,
+    pub dsh_home_path: String,
+    pub dsh_home_size_bytes: u64,
+    pub config_dir_path: String,
+    pub config_dir_size_bytes: u64,
+    pub cache_size_bytes: u64,
+}
+
+fn calculate_dir_size(path: &std::path::Path) -> u64 {
+    if !path.exists() {
+        return 0;
+    }
+    if path.is_file() {
+        return path.metadata().map(|m| m.len()).unwrap_or(0);
+    }
+    let mut total = 0;
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for entry in entries.flatten() {
+            let p = entry.path();
+            if p.is_file() {
+                total += entry.metadata().map(|m| m.len()).unwrap_or(0);
+            } else if p.is_dir() {
+                total += calculate_dir_size(&p);
+            }
+        }
+    }
+    total
+}
+
+#[tauri::command]
+pub async fn get_storage_info(state: State<'_, AppState>) -> Result<StorageInfo, String> {
+    let settings = lock_settings(&state)?.clone();
+    let prefix_path = agent::agent_prefix_dir()
+        .map(|p| p.display().to_string())
+        .unwrap_or_default();
+    let prefix_size = calculate_dir_size(std::path::Path::new(&prefix_path));
+
+    let dsh_home = if let Some(custom) = &settings.dsh_home_override {
+        if !custom.trim().is_empty() {
+            std::path::PathBuf::from(custom.trim())
+        } else {
+            dirs::home_dir().map(|h| h.join(".dsh")).unwrap_or_default()
+        }
+    } else {
+        dirs::home_dir().map(|h| h.join(".dsh")).unwrap_or_default()
+    };
+    let dsh_home_path = dsh_home.display().to_string();
+    let dsh_home_size = calculate_dir_size(&dsh_home);
+
+    let config_dir = dirs::config_dir()
+        .map(|c| c.join("deepseek-harness-gui"))
+        .unwrap_or_default();
+    let config_dir_path = config_dir.display().to_string();
+    let config_dir_size = calculate_dir_size(&config_dir);
+
+    let cache_dir = dirs::cache_dir()
+        .map(|c| c.join("deepseek-harness-gui"))
+        .unwrap_or_default();
+    let cache_size = calculate_dir_size(&cache_dir);
+
+    Ok(StorageInfo {
+        agent_prefix_path: prefix_path,
+        agent_prefix_size_bytes: prefix_size,
+        dsh_home_path,
+        dsh_home_size_bytes: dsh_home_size,
+        config_dir_path,
+        config_dir_size_bytes: config_dir_size,
+        cache_size_bytes: cache_size,
+    })
+}
+
+#[tauri::command]
+pub async fn clear_cache(state: State<'_, AppState>) -> Result<StorageInfo, String> {
+    if let Some(cache_dir) = dirs::cache_dir().map(|c| c.join("deepseek-harness-gui")) {
+        if cache_dir.exists() {
+            let _ = std::fs::remove_dir_all(&cache_dir);
+            let _ = std::fs::create_dir_all(&cache_dir);
+        }
+    }
+    let settings = lock_settings(&state)?.clone();
+    let dsh_home = if let Some(custom) = &settings.dsh_home_override {
+        if !custom.trim().is_empty() {
+            std::path::PathBuf::from(custom.trim())
+        } else {
+            dirs::home_dir().map(|h| h.join(".dsh")).unwrap_or_default()
+        }
+    } else {
+        dirs::home_dir().map(|h| h.join(".dsh")).unwrap_or_default()
+    };
+    let dsh_tmp = dsh_home.join("tmp");
+    if dsh_tmp.exists() {
+        let _ = std::fs::remove_dir_all(&dsh_tmp);
+    }
+    let dsh_logs = dsh_home.join("logs");
+    if dsh_logs.exists() {
+        let _ = std::fs::remove_dir_all(&dsh_logs);
+    }
+    get_storage_info(state).await
+}
+
+#[tauri::command]
+pub async fn open_storage_dir(path: String) -> Result<(), String> {
+    reveal_in_file_manager(path).await
+}
+
 

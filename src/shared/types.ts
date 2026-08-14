@@ -20,6 +20,17 @@ export interface AppSettings {
   agentAutoUpdate: boolean;
   autoStart: boolean;
   globalShortcutEnabled: boolean;
+  dshHomeOverride?: string;
+}
+
+export interface StorageInfo {
+  agentPrefixPath: string;
+  agentPrefixSizeBytes: number;
+  dshHomePath: string;
+  dshHomeSizeBytes: number;
+  configDirPath: string;
+  configDirSizeBytes: number;
+  cacheSizeBytes: number;
 }
 
 export interface HarnessStatus {
@@ -153,6 +164,7 @@ export interface SettingsPatch {
   agentAutoUpdate?: boolean;
   autoStart?: boolean;
   globalShortcutEnabled?: boolean;
+  dshHomeOverride?: string;
 }
 
 export const IDLE_HARNESS: HarnessStatus = {

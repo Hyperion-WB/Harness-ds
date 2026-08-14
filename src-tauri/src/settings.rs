@@ -43,6 +43,8 @@ pub struct AppSettings {
     pub auto_start: bool,
     #[serde(default = "default_true")]
     pub global_shortcut_enabled: bool,
+    #[serde(default)]
+    pub dsh_home_override: Option<String>,
     /// Used only when the OS keyring is unavailable.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub api_key_fallback: Option<String>,

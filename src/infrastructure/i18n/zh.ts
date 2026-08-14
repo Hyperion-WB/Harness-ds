@@ -75,6 +75,7 @@ export const zh = {
   "settings.tab.models": "模型服务",
   "settings.tab.plugins": "插件与 MCP",
   "settings.tab.agent": "Agent 管理",
+  "settings.tab.storage": "存储与缓存",
   "settings.tab.appearance": "外观与偏好",
   "settings.models": "模型服务",
   "settings.apiKeyPresent": "已保存",

@@ -49,5 +49,8 @@ export interface HostAdapter {
   openInEditor(path: string, editor?: string): Promise<void>;
   openInTerminal(path: string): Promise<void>;
   revealInFileManager(path: string): Promise<void>;
+  getStorageInfo(): Promise<import("@/shared/types").StorageInfo>;
+  clearCache(): Promise<import("@/shared/types").StorageInfo>;
+  openStorageDir(path: string): Promise<void>;
 }
 

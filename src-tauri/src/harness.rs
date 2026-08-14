@@ -163,6 +163,11 @@ impl HarnessManager {
         for (name, value) in &provider_env {
             command.env(name, value);
         }
+        if let Some(dsh_home) = &settings.dsh_home_override {
+            if !dsh_home.trim().is_empty() {
+                command.env("DSH_HOME", dsh_home.trim());
+            }
+        }
 
         #[cfg(unix)]
         {

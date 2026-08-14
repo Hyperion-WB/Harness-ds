@@ -186,5 +186,17 @@ export const tauriAdapter: HostAdapter = {
   async revealInFileManager(path: string) {
     await invoke<void>("reveal_in_file_manager", { path });
   },
+
+  async getStorageInfo() {
+    return invoke<import("@/shared/types").StorageInfo>("get_storage_info");
+  },
+
+  async clearCache() {
+    return invoke<import("@/shared/types").StorageInfo>("clear_cache");
+  },
+
+  async openStorageDir(path: string) {
+    await invoke<void>("open_storage_dir", { path });
+  },
 };
 
