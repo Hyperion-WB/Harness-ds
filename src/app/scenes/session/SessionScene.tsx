@@ -1,14 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  Code,
-  Folder,
-  Globe,
-  Loader2,
-  Search,
-  Terminal,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { useI18n } from "@/infrastructure/i18n";
 import { Button } from "@/component-library";
 import { useAppStore } from "@/app/stores/appStore";
@@ -38,11 +29,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const restartHarness = useAppStore((s) => s.restartHarness);
   const workspacePath = useAppStore((s) => s.workspacePath);
   const openWorkspace = useAppStore((s) => s.openWorkspace);
-  const openInEditor = useAppStore((s) => s.openInEditor);
-  const openInTerminal = useAppStore((s) => s.openInTerminal);
-  const revealInFileManager = useAppStore((s) => s.revealInFileManager);
   const toggleLogsDrawer = useAppStore((s) => s.toggleLogsDrawer);
-  const openExternal = useAppStore((s) => s.host.openExternal);
   const defaultModel = useAppStore((s) => s.defaultModel);
   const activePreset = useAppStore((s) => s.activePreset);
   const setActivePreset = useAppStore((s) => s.setActivePreset);
@@ -67,6 +54,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
       const gwClient = getGatewayClient(harness.url);
       if (gwClient) {
         setClient(gwClient);
+        setConnected(true);
 
         const unsubConn = gwClient.subscribeConnection((conn) => {
           setConnected(conn);
@@ -375,72 +363,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
 
   return (
     <div className={`dshg-session ${active ? "is-active" : "is-hidden"}`}>
-      {/* Top action toolbar */}
-      <div className="dshg-session__top-bar">
-        <div className="dshg-session__top-left">
-          <div className={`dshg-conn-badge ${connected ? "is-connected" : "is-disconnected"}`}>
-            {connected ? <Wifi size={12} /> : <WifiOff size={12} />}
-            <span>{connected ? "引擎已连接" : "连接中..."}</span>
-          </div>
-        </div>
-
-        <div className="dshg-session__top-right">
-          {workspacePath && (
-            <>
-              <button
-                type="button"
-                className="dshg-session__tool-btn"
-                title="在 VS Code 中打开当前工作区"
-                onClick={() => void openInEditor(workspacePath, "code")}
-              >
-                <Code size={13.5} />
-                <span>VS Code</span>
-              </button>
-
-              <button
-                type="button"
-                className="dshg-session__tool-btn"
-                title="打开系统终端"
-                onClick={() => void openInTerminal(workspacePath)}
-              >
-                <Terminal size={13.5} />
-              </button>
-
-              <button
-                type="button"
-                className="dshg-session__tool-btn"
-                title="在文件管理器中显示"
-                onClick={() => void revealInFileManager(workspacePath)}
-              >
-                <Folder size={13.5} />
-              </button>
-            </>
-          )}
-
-          <button
-            type="button"
-            className="dshg-session__tool-btn"
-            title="实时日志控制台"
-            onClick={toggleLogsDrawer}
-          >
-            <Terminal size={13.5} />
-            <span>日志</span>
-          </button>
-
-          {harness.url && (
-            <button
-              type="button"
-              className="dshg-session__tool-btn"
-              title="在外部浏览器中查看原始调试页"
-              onClick={() => void openExternal(harness.url!)}
-            >
-              <Globe size={13.5} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Main Native Session Layout */}
+      {/* Main Native Session Layout: Seamlessly blends into the client window */}
       <div className="dshg-session__native-body">
         <SessionSidebar
           sessions={sessions}

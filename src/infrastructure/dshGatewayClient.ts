@@ -12,7 +12,7 @@ import type {
 const log = createLogger("gateway-client");
 
 export interface GatewayClientConfig {
-  baseUrl: string; // e.g. "http://127.0.0.1:3080"
+  baseUrl: string;
   onMuxFrame?: (frame: MuxFrame) => void;
   onHostFrame?: (frame: HostFrame) => void;
   onConnectionChange?: (connected: boolean) => void;
@@ -28,6 +28,7 @@ export class DshGatewayClient {
   private isConnected = false;
   private isDisposed = false;
   private reconnectTimer: number | null = null;
+  private pollTimer: number | null = null;
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
@@ -39,8 +40,13 @@ export class DshGatewayClient {
 
   public connect(): void {
     if (this.isDisposed) return;
+    // 1. Immediately verify HTTP RPC connectivity
+    void this.pingHttp();
+    // 2. Initialize WebSockets for real-time streaming
     this.initMuxWs();
     this.initHostWs();
+    // 3. Start background health poll
+    this.startHttpPolling();
   }
 
   public disconnect(): void {
@@ -48,6 +54,10 @@ export class DshGatewayClient {
     if (this.reconnectTimer) {
       window.clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+    }
+    if (this.pollTimer) {
+      window.clearInterval(this.pollTimer);
+      this.pollTimer = null;
     }
     if (this.muxWs) {
       try {
@@ -77,6 +87,30 @@ export class DshGatewayClient {
     }
   }
 
+  public async pingHttp(): Promise<boolean> {
+    try {
+      await this.listSessions();
+      this.setConnected(true);
+      return true;
+    } catch {
+      try {
+        await this.listWorkspaces();
+        this.setConnected(true);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }
+
+  private startHttpPolling(): void {
+    if (this.pollTimer) return;
+    this.pollTimer = window.setInterval(() => {
+      if (this.isDisposed) return;
+      void this.pingHttp();
+    }, 4000);
+  }
+
   private initMuxWs(): void {
     if (this.isDisposed) return;
     const wsUrl = this.baseUrl.replace(/^http:\/\//i, "ws://").replace(/^https:\/\//i, "wss://") + "/api/events.mux";
@@ -93,7 +127,7 @@ export class DshGatewayClient {
           if (raw && typeof raw === "object") {
             if (raw.type === "server-request" && raw.payload) {
               frame = raw.payload as MuxFrame;
-            } else if (raw.type && raw.type.includes("/")) {
+            } else if (raw.type && typeof raw.type === "string") {
               frame = raw as MuxFrame;
             }
           }
@@ -112,7 +146,6 @@ export class DshGatewayClient {
       };
       this.muxWs.onclose = () => {
         log.info("Mux WebSocket closed, reconnecting in 2s...");
-        this.setConnected(false);
         this.scheduleReconnect();
       };
       this.muxWs.onerror = (err) => {
@@ -139,7 +172,7 @@ export class DshGatewayClient {
           if (raw && typeof raw === "object") {
             if (raw.type === "server-request" && raw.payload) {
               frame = raw.payload as HostFrame;
-            } else if (raw.type && raw.type.includes("/")) {
+            } else if (raw.type && typeof raw.type === "string") {
               frame = raw as HostFrame;
             }
           }
@@ -175,7 +208,7 @@ export class DshGatewayClient {
         this.initMuxWs();
         this.initHostWs();
       }
-    }, 2000);
+    }, 2500);
   }
 
   public subscribeMux(handler: (frame: MuxFrame) => void): () => void {
@@ -228,12 +261,14 @@ export class DshGatewayClient {
     if (data && typeof data === "object" && "result" in data) {
       const result = data.result;
       if (result.ok === true) {
+        this.setConnected(true);
         return result.value as T;
       }
       const err = result.error || { message: "Unknown RPC error" };
       throw new Error(err.message || `RPC Error: ${err.code || "unknown"}`);
     }
 
+    this.setConnected(true);
     return data as T;
   }
 
@@ -342,7 +377,6 @@ export class DshGatewayClient {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }).catch(async () => {
-      // Fallback to /api
       await this.callRpc<void>("questions.respond", { rpcId, sessionId, answers });
     });
   }

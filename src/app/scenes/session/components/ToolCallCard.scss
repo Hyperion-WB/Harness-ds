@@ -1,85 +1,87 @@
 .dshg-tool-card {
-  margin: 8px 0;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 6px 0;
+  border-radius: var(--dshg-radius-md);
+  background: var(--dshg-element-subtle);
+  border: 1px solid var(--dshg-border-subtle);
   overflow: hidden;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.16);
+    border-color: var(--dshg-border-base);
   }
 
   &.is-running,
   &.is-calling {
-    border-color: rgba(59, 130, 246, 0.35);
-    background: rgba(59, 130, 246, 0.03);
+    border-color: rgba(59, 130, 246, 0.4);
   }
 
   &.is-failed {
-    border-color: rgba(239, 68, 68, 0.35);
-    background: rgba(239, 68, 68, 0.03);
+    border-color: rgba(239, 68, 68, 0.4);
   }
 
   &.is-completed {
-    border-color: rgba(34, 197, 94, 0.2);
+    border-color: var(--dshg-border-subtle);
   }
 
   &__header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
     user-select: none;
+
+    &:hover {
+      background: var(--dshg-element-soft);
+    }
   }
 
   &__left {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__icon-box {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #60a5fa;
+    color: #3b82f6;
   }
 
   &__name {
     font-weight: 500;
-    color: var(--dshg-text-primary, #f1f5f9);
+    color: var(--dshg-text-primary);
   }
 
   &__id {
-    font-family: var(--dshg-font-mono, monospace);
-    font-size: 0.72rem;
-    color: var(--dshg-text-secondary, #64748b);
+    font-family: var(--dshg-font-mono);
+    font-size: 0.7rem;
+    color: var(--dshg-text-muted);
     padding: 1px 4px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--dshg-radius-sm);
+    background: var(--dshg-element-soft);
   }
 
   &__right {
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: var(--dshg-text-secondary, #94a3b8);
+    gap: 6px;
+    color: var(--dshg-text-muted);
   }
 
   &__status {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
 
     .is-success {
-      color: #22c55e;
+      color: var(--dshg-success);
     }
     .is-error {
-      color: #ef4444;
+      color: var(--dshg-error);
     }
     .is-spinning {
       color: #3b82f6;
@@ -88,50 +90,50 @@
   }
 
   &__body {
-    padding: 10px 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+    border-top: 1px solid var(--dshg-border-subtle);
+    background: var(--dshg-element-subtle);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
 
   &__section {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
   }
 
   &__label {
-    font-size: 0.75rem;
-    color: var(--dshg-text-secondary, #94a3b8);
+    font-size: 0.72rem;
+    color: var(--dshg-text-muted);
     font-weight: 500;
 
     &.is-error {
-      color: #ef4444;
+      color: var(--dshg-error);
     }
   }
 
   &__code {
     margin: 0;
-    padding: 8px 10px;
-    background: rgba(0, 0, 0, 0.35);
-    border-radius: 6px;
-    font-family: var(--dshg-font-mono, ui-monospace, monospace);
-    font-size: 0.76rem;
-    color: #cbd5e1;
+    padding: 6px 8px;
+    background: var(--dshg-bg-primary);
+    border-radius: var(--dshg-radius-sm);
+    font-family: var(--dshg-font-mono);
+    font-size: 0.74rem;
+    color: var(--dshg-text-secondary);
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;
-    max-height: 280px;
-    border: 1px solid rgba(255, 255, 255, 0.03);
+    max-height: 240px;
+    border: 1px solid var(--dshg-border-subtle);
 
     &.dshg-tool-card__output {
-      color: #a7f3d0;
+      color: var(--dshg-text-primary);
     }
 
     &.is-error-text {
-      color: #fca5a5;
+      color: var(--dshg-error);
     }
   }
 }

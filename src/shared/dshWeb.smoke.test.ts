@@ -5,7 +5,7 @@ const READY_MS = 90_000;
 const runSmoke = process.env.DSH_GUI_SMOKE === "1";
 
 describe.skipIf(!runSmoke)("dsh web loopback smoke", () => {
-  it("prints a loopback URL and serves HTTP 200", async (ctx) => {
+  it("prints a loopback URL and serves HTTP 200", async (ctx: any) => {
     if (!resolveLauncher()) {
       ctx.skip();
       return;
