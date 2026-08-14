@@ -33,3 +33,7 @@ coverage
 *.pem
 .tauri-signing*
 
+# Local reference source
+deepseek-harness/
+
+

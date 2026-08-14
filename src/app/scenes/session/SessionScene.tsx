@@ -3,7 +3,7 @@ import { Loader2, Search } from "lucide-react";
 import { useI18n } from "@/infrastructure/i18n";
 import { Button } from "@/component-library";
 import { useAppStore } from "@/app/stores/appStore";
-import { getGatewayClient, type DshGatewayClient } from "@/infrastructure/dshGatewayClient";
+import { getGatewayClient, parseHistoryEvents, type DshGatewayClient } from "@/infrastructure/dshGatewayClient";
 import type {
   ApprovalOutcome,
   ApprovalRequest,
@@ -83,6 +83,21 @@ export function SessionScene({ active = true }: SessionSceneProps) {
       setConnected(false);
     }
   }, [harness.state, harness.url, workspacePath]);
+
+  // Load session history when active session changes
+  useEffect(() => {
+    if (!client || !activeSessionId) return;
+    void client.getSessionHistory(activeSessionId).then((res: any) => {
+      if (res && Array.isArray(res.events)) {
+        const parsed = parseHistoryEvents(res.events);
+        if (parsed.length > 0) {
+          setMessages(parsed);
+        }
+      }
+    }).catch((e) => {
+      console.error("Failed to load session history", e);
+    });
+  }, [client, activeSessionId]);
 
   // Subscribe to Mux streaming frames
   useEffect(() => {

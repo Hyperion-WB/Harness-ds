@@ -423,3 +423,115 @@ export function getGatewayClient(baseUrl?: string): DshGatewayClient | null {
   }
   return activeClient;
 }
+
+export function parseHistoryEvents(entries: Array<{ event: any; view?: any }>): import("./dshTypes").ChatMessage[] {
+  const messages: import("./dshTypes").ChatMessage[] = [];
+  let currentAssistantMsg: import("./dshTypes").ChatMessage | null = null;
+
+  if (!Array.isArray(entries)) return messages;
+
+  for (const entry of entries) {
+    const ev = entry.event;
+    if (!ev) continue;
+
+    if (ev.type === "user/message") {
+      if (currentAssistantMsg) {
+        messages.push(currentAssistantMsg);
+        currentAssistantMsg = null;
+      }
+      let content = "";
+      const d = ev.data;
+      if (typeof d === "string") {
+        content = d;
+      } else if (d && typeof d === "object") {
+        if (typeof d.text === "string") {
+          content = d.text;
+        } else if (Array.isArray(d.content)) {
+          content = d.content
+            .map((c: any) => (typeof c === "string" ? c : c.text || ""))
+            .filter(Boolean)
+            .join("\n");
+        } else if (typeof d.content === "string") {
+          content = d.content;
+        }
+      }
+      messages.push({
+        id: `user-${ev.seq ?? messages.length}`,
+        role: "user",
+        content: content || "(Empty prompt)",
+        createdAt: ev.time || Date.now(),
+      });
+    } else if (ev.type === "assistant/message") {
+      let content = "";
+      let reasoning = "";
+      const d = ev.data;
+      if (typeof d === "string") {
+        content = d;
+      } else if (d && typeof d === "object") {
+        if (typeof d.text === "string") {
+          content = d.text;
+        } else if (Array.isArray(d.content)) {
+          content = d.content
+            .filter((c: any) => c.type === "text" || !c.type)
+            .map((c: any) => (typeof c === "string" ? c : c.text || ""))
+            .join("\n");
+          reasoning = d.content
+            .filter((c: any) => c.type === "reasoning" || c.type === "thought")
+            .map((c: any) => c.text || c.thought || "")
+            .join("\n");
+        } else if (typeof d.content === "string") {
+          content = d.content;
+        }
+        if (d.reasoning) reasoning = d.reasoning;
+        if (d.thought) reasoning = d.thought;
+      }
+
+      if (currentAssistantMsg) {
+        currentAssistantMsg.content = (currentAssistantMsg.content ? currentAssistantMsg.content + "\n" : "") + content;
+        if (reasoning) currentAssistantMsg.reasoning = (currentAssistantMsg.reasoning || "") + reasoning;
+      } else {
+        currentAssistantMsg = {
+          id: `asst-${ev.seq ?? messages.length}`,
+          role: "assistant",
+          content,
+          reasoning: reasoning || undefined,
+          createdAt: ev.time || Date.now(),
+        };
+      }
+    } else if (ev.type === "tool/call" || ev.type === "tool/result" || entry.view) {
+      const view = entry.view;
+      if (view) {
+        if (!currentAssistantMsg) {
+          currentAssistantMsg = {
+            id: `asst-${ev.seq ?? messages.length}`,
+            role: "assistant",
+            content: "",
+            toolCalls: [view],
+            createdAt: ev.time || Date.now(),
+          };
+        } else {
+          const tools = currentAssistantMsg.toolCalls || [];
+          const idx = tools.findIndex((t) => t.callId === view.callId);
+          if (idx >= 0) {
+            tools[idx] = view;
+          } else {
+            tools.push(view);
+          }
+          currentAssistantMsg.toolCalls = [...tools];
+        }
+      }
+    } else if (ev.type === "turn/end" || ev.type === "turn/stop") {
+      if (currentAssistantMsg) {
+        messages.push(currentAssistantMsg);
+        currentAssistantMsg = null;
+      }
+    }
+  }
+
+  if (currentAssistantMsg) {
+    messages.push(currentAssistantMsg);
+  }
+
+  return messages;
+}
+
