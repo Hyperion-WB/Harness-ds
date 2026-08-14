@@ -83,6 +83,7 @@ impl Default for AppSettings {
             agent_auto_update: true,
             auto_start: false,
             global_shortcut_enabled: true,
+            dsh_home_override: None,
             api_key_fallback: None,
             openai_api_key_fallback: None,
             anthropic_api_key_fallback: None,
