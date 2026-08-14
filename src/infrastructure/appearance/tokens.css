@@ -1,0 +1,167 @@
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+  --dshg-bg-primary: #141414;
+  --dshg-bg-secondary: #1c1c1c;
+  --dshg-bg-scene: #111111;
+  --dshg-bg-elevated: #1c1c1c;
+  --dshg-text-primary: #f3f3f3;
+  --dshg-text-secondary: #b4b4b4;
+  --dshg-text-muted: #8a8a8a;
+  --dshg-accent: #f3f3f3;
+  --dshg-accent-strong: #ffffff;
+  --dshg-on-accent: #111111;
+  --dshg-accent-soft: rgba(243, 243, 243, 0.08);
+  --dshg-accent-glow: transparent;
+  --dshg-success: #3d9a6a;
+  --dshg-warning: #c9922e;
+  --dshg-error: #d16a6a;
+  --dshg-element-subtle: rgba(255, 255, 255, 0.04);
+  --dshg-element-soft: rgba(255, 255, 255, 0.07);
+  --dshg-element-medium: rgba(255, 255, 255, 0.1);
+  --dshg-border-subtle: rgba(255, 255, 255, 0.08);
+  --dshg-border-base: rgba(255, 255, 255, 0.14);
+  --dshg-overlay-black: rgba(0, 0, 0, 0.4);
+  --dshg-static-white: #ffffff;
+  --dshg-ghost: #c8c8c8;
+  --dshg-switch-off: #3a3a3a;
+  --dshg-switch-on: #d97757;
+  --dshg-atmosphere: none;
+  --dshg-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.32);
+  --dshg-glass: rgba(18, 18, 18, 0.32);
+  --dshg-glass-track: rgba(255, 255, 255, 0.08);
+  --dshg-glass-border: rgba(255, 255, 255, 0.12);
+  --dshg-glass-highlight: rgba(255, 255, 255, 0.1);
+  --dshg-glass-orb-a: rgba(217, 119, 87, 0.38);
+  --dshg-glass-orb-b: rgba(120, 150, 200, 0.28);
+  --dshg-pill: rgba(255, 255, 255, 0.16);
+  --dshg-pill-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --dshg-floating-glass: rgba(26, 26, 32, 0.72);
+  --dshg-floating-glass-border: rgba(255, 255, 255, 0.12);
+  --dshg-floating-glass-highlight: rgba(255, 255, 255, 0.15);
+  --dshg-floating-pill: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.1) 100%);
+  --dshg-floating-pill-border: rgba(255, 255, 255, 0.18);
+  --dshg-floating-shadow: 0 10px 28px -4px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+
+[data-theme="light"] {
+  color-scheme: light;
+  --dshg-bg-primary: #f5f5f3;
+  --dshg-bg-secondary: #ffffff;
+  --dshg-bg-scene: #f0f0ee;
+  --dshg-bg-elevated: #ffffff;
+  --dshg-text-primary: #1a1a1a;
+  --dshg-text-secondary: #4a4a4a;
+  --dshg-text-muted: #737373;
+  --dshg-accent: #1a1a1a;
+  --dshg-accent-strong: #000000;
+  --dshg-on-accent: #ffffff;
+  --dshg-accent-soft: rgba(0, 0, 0, 0.05);
+  --dshg-accent-glow: transparent;
+  --dshg-success: #2f7d55;
+  --dshg-warning: #b07d1a;
+  --dshg-error: #c24b4b;
+  --dshg-element-subtle: rgba(0, 0, 0, 0.03);
+  --dshg-element-soft: rgba(0, 0, 0, 0.05);
+  --dshg-element-medium: rgba(0, 0, 0, 0.08);
+  --dshg-border-subtle: rgba(0, 0, 0, 0.05);
+  --dshg-border-base: rgba(0, 0, 0, 0.09);
+  --dshg-overlay-black: rgba(0, 0, 0, 0.08);
+  --dshg-static-white: #ffffff;
+  --dshg-ghost: #525252;
+  --dshg-switch-off: #d4d4d0;
+  --dshg-switch-on: #c96442;
+  --dshg-atmosphere: none;
+  --dshg-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.06);
+  --dshg-glass: rgba(250, 250, 248, 0.42);
+  --dshg-glass-track: rgba(0, 0, 0, 0.04);
+  --dshg-glass-border: rgba(0, 0, 0, 0.06);
+  --dshg-glass-highlight: rgba(255, 255, 255, 0.8);
+  --dshg-glass-orb-a: rgba(201, 100, 66, 0.22);
+  --dshg-glass-orb-b: rgba(120, 150, 200, 0.18);
+  --dshg-pill: rgba(255, 255, 255, 0.95);
+  --dshg-pill-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 0.5px rgba(0, 0, 0, 0.02);
+  --dshg-floating-glass: rgba(255, 255, 255, 0.88);
+  --dshg-floating-glass-border: rgba(0, 0, 0, 0.04);
+  --dshg-floating-glass-highlight: rgba(255, 255, 255, 0.95);
+  --dshg-floating-pill: #ffffff;
+  --dshg-floating-pill-border: rgba(0, 0, 0, 0.03);
+  --dshg-floating-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    color-scheme: light;
+    --dshg-bg-primary: #f5f5f3;
+    --dshg-bg-secondary: #ffffff;
+    --dshg-bg-scene: #f0f0ee;
+    --dshg-bg-elevated: #ffffff;
+    --dshg-text-primary: #1a1a1a;
+    --dshg-text-secondary: #4a4a4a;
+    --dshg-text-muted: #737373;
+    --dshg-accent: #1a1a1a;
+    --dshg-accent-strong: #000000;
+    --dshg-on-accent: #ffffff;
+    --dshg-accent-soft: rgba(0, 0, 0, 0.05);
+    --dshg-accent-glow: transparent;
+    --dshg-success: #2f7d55;
+    --dshg-warning: #b07d1a;
+    --dshg-error: #c24b4b;
+    --dshg-element-subtle: rgba(0, 0, 0, 0.03);
+    --dshg-element-soft: rgba(0, 0, 0, 0.05);
+    --dshg-element-medium: rgba(0, 0, 0, 0.08);
+    --dshg-border-subtle: rgba(0, 0, 0, 0.08);
+    --dshg-border-base: rgba(0, 0, 0, 0.14);
+    --dshg-overlay-black: rgba(0, 0, 0, 0.08);
+    --dshg-static-white: #ffffff;
+    --dshg-ghost: #525252;
+    --dshg-switch-off: #d4d4d0;
+    --dshg-switch-on: #c96442;
+    --dshg-atmosphere: none;
+    --dshg-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.08);
+    --dshg-glass: rgba(250, 250, 248, 0.38);
+    --dshg-glass-track: rgba(0, 0, 0, 0.06);
+    --dshg-glass-border: rgba(0, 0, 0, 0.1);
+    --dshg-glass-highlight: rgba(255, 255, 255, 0.7);
+    --dshg-glass-orb-a: rgba(201, 100, 66, 0.28);
+    --dshg-glass-orb-b: rgba(120, 150, 200, 0.24);
+    --dshg-glass-orb-c: rgba(255, 200, 160, 0.18);
+    --dshg-pill: rgba(255, 255, 255, 0.9);
+    --dshg-pill-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    color-scheme: dark;
+  }
+}
+
+:root {
+  --dshg-radius-sm: 6px;
+  --dshg-radius-md: 8px;
+  --dshg-radius-lg: 12px;
+  --dshg-gap-1: 4px;
+  --dshg-gap-2: 8px;
+  --dshg-gap-3: 12px;
+  --dshg-gap-4: 16px;
+  --dshg-gap-6: 24px;
+  --dshg-gap-8: 32px;
+  --dshg-font-display: "Segoe UI", "PingFang SC", "Noto Sans SC", "Microsoft YaHei",
+    system-ui, sans-serif;
+  --dshg-font-sans: "Segoe UI", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui,
+    sans-serif;
+  --dshg-font-mono: "SF Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --dshg-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dshg-ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --dshg-motion: 200ms;
+  --dshg-motion-slow: 320ms;
+  --dshg-motion-spring: 520ms;
+  --dshg-blur: 36px;
+  --dshg-chrome: 48px;
+  --dshg-nav: 248px;
+  --dshg-nav-collapsed: 72px;
+}

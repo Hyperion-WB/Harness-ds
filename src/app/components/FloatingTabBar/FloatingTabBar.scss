@@ -1,0 +1,127 @@
+.dshg-floating-bar {
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+  z-index: 40;
+  pointer-events: auto;
+}
+
+.dshg-floating-bar__track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9999px;
+  background: var(--dshg-floating-glass);
+  border: 1px solid var(--dshg-floating-glass-border);
+  box-shadow:
+    var(--dshg-floating-shadow),
+    inset 0 1px 0 var(--dshg-floating-glass-highlight);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  transition: all 260ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  &:hover {
+    box-shadow:
+      0 10px 32px -4px rgba(0, 0, 0, 0.15),
+      0 3px 10px rgba(0, 0, 0, 0.08),
+      inset 0 1px 0 var(--dshg-floating-glass-highlight);
+  }
+}
+
+.dshg-floating-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  border-radius: 9999px;
+  background: var(--dshg-floating-pill);
+  border: 1px solid var(--dshg-floating-pill-border);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 0.5px 0.5px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease;
+  will-change: transform, width;
+  backface-visibility: hidden;
+
+  &.is-ready {
+    opacity: 1;
+  }
+}
+
+
+.dshg-floating-bar__tab {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: none;
+  background: transparent;
+  color: var(--dshg-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+  cursor: pointer;
+  transition:
+    color 200ms ease,
+    transform 160ms cubic-bezier(0.32, 0.72, 0, 1),
+    opacity 160ms ease;
+
+  &:hover:not(.is-active) {
+    color: var(--dshg-text-primary);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.is-active {
+    color: var(--dshg-text-primary);
+    font-weight: 600;
+  }
+}
+
+.dshg-floating-bar__icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dshg-floating-bar__label {
+  display: inline-block;
+  line-height: 1;
+}
+
+.dshg-floating-bar__live-dot {
+  position: absolute;
+  top: -1px;
+  right: -3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dshg-success);
+  box-shadow: 0 0 6px var(--dshg-success);
+  animation: dshg-live-pulse 2s infinite ease-in-out;
+}
+
+@keyframes dshg-live-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+}

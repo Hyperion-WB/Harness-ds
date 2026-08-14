@@ -1,0 +1,56 @@
+/* Shared Apple-style sliding pill */
+.dshg-pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--dshg-pill);
+  box-shadow: var(--dshg-pill-shadow);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    height 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease;
+  will-change: transform, width, height;
+  backface-visibility: hidden;
+
+  &.is-ready {
+    opacity: 1;
+  }
+
+  &--y {
+    width: auto;
+    height: 0;
+  }
+}
+
+.dshg-floating-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  border-radius: 9999px;
+  background: var(--dshg-floating-pill);
+  border: 1px solid var(--dshg-floating-pill-border);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    inset 0 0.5px 0.5px rgba(255, 255, 255, 0.6);
+  pointer-events: none;
+  opacity: 0;
+  transition:
+    transform 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    width 360ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 160ms ease;
+  will-change: transform, width;
+  backface-visibility: hidden;
+
+  &.is-ready {
+    opacity: 1;
+  }
+}
+
+
+

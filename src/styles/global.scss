@@ -1,0 +1,157 @@
+@use "./pill.scss";
+@import "../infrastructure/appearance/tokens.css";
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--dshg-bg-primary);
+  color: var(--dshg-text-primary);
+  font-family: var(--dshg-font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--dshg-text-primary);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--dshg-accent-soft);
+}
+
+/* Thin themed scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dshg-border-base) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--dshg-border-base);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--dshg-text-muted);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Native select fallback when used */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--dshg-bg-secondary);
+  background-image: linear-gradient(45deg, transparent 50%, var(--dshg-text-muted) 50%),
+    linear-gradient(135deg, var(--dshg-text-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 10px) calc(50% - 2px);
+  background-size: 4px 4px, 4px 4px;
+  background-repeat: no-repeat;
+  color: var(--dshg-text-primary);
+  border: 1px solid var(--dshg-border-base);
+  border-radius: var(--dshg-radius-sm);
+  padding-right: 28px;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--dshg-text-muted);
+}
+
+select option {
+  background: var(--dshg-bg-elevated);
+  color: var(--dshg-text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@keyframes dshg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dshg-pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dshg-card-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dshg-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  70% {
+    transform: scale(1.015);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+

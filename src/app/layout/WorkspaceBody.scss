@@ -1,0 +1,178 @@
+.dshg-workspace {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--dshg-bg-scene);
+  isolation: isolate;
+
+  /* Ambient layer so frosted glass has something real to blur. */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -20% -10%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(42% 38% at 14% 12%, var(--dshg-glass-orb-a), transparent 68%),
+      radial-gradient(38% 34% at 86% 18%, var(--dshg-glass-orb-b), transparent 66%),
+      radial-gradient(48% 40% at 48% 92%, var(--dshg-glass-orb-c), transparent 70%),
+      var(--dshg-bg-scene);
+    animation: dshg-orb-drift 18s var(--dshg-ease) infinite alternate;
+    will-change: transform;
+  }
+
+  > *:not(.dshg-logs-drawer):not(.dshg-cmd-overlay) {
+    position: relative;
+    z-index: 1;
+  }
+
+  &__body {
+
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__nav {
+    display: flex;
+    flex-direction: column;
+    width: var(--dshg-nav);
+    flex-shrink: 0;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    background: var(--dshg-glass);
+    border-right: 1px solid var(--dshg-glass-border);
+    backdrop-filter: blur(var(--dshg-blur)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--dshg-blur)) saturate(1.4);
+    box-shadow: inset -1px 0 0 var(--dshg-glass-highlight);
+    transition:
+      width 560ms var(--dshg-ease-spring),
+      background var(--dshg-motion) var(--dshg-ease-spring),
+      border-color var(--dshg-motion) var(--dshg-ease-spring);
+    will-change: width;
+
+    &::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+  }
+
+  &.is-collapsed &__nav {
+    width: var(--dshg-nav-collapsed);
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+  }
+
+  &__scene {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    flex-direction: column;
+    background: color-mix(in srgb, var(--dshg-bg-scene) 88%, transparent);
+  }
+
+  &__viewport {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__pane {
+    height: 100%;
+    content-visibility: auto;
+    animation: dshg-pane-in var(--dshg-motion-spring) var(--dshg-ease-spring) both;
+
+    &[hidden] {
+      display: none !important;
+      animation: none;
+    }
+
+    &--session[data-active="false"] {
+      content-visibility: hidden;
+      pointer-events: none;
+    }
+
+    &--session[data-active="true"] {
+      content-visibility: visible;
+    }
+  }
+
+  &__lazy {
+    padding: 32px;
+    color: var(--dshg-text-muted);
+    animation: dshg-fade-in var(--dshg-motion) var(--dshg-ease-spring) both;
+  }
+}
+
+@keyframes dshg-pane-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes dshg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dshg-orb-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(2.5%, -1.5%, 0) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dshg-workspace::before {
+    animation: none;
+  }
+
+  .dshg-workspace__pane,
+  .dshg-workspace__lazy {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .dshg-workspace:not(.is-collapsed) {
+    --dshg-nav: 200px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dshg-workspace:not(.is-collapsed) .dshg-workspace__nav {
+    position: absolute;
+    inset: var(--dshg-chrome) auto 0 0;
+    z-index: 15;
+    width: min(280px, 82vw);
+    box-shadow: var(--dshg-shadow-soft);
+  }
+
+  .dshg-workspace:not(.is-collapsed) .dshg-workspace__scene {
+    width: 100%;
+  }
+}

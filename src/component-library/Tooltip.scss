@@ -1,0 +1,56 @@
+.dshg-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.dshg-tooltip-layer {
+  position: fixed;
+  z-index: 10000;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: var(--dshg-bg-elevated);
+  border: 1px solid var(--dshg-glass-border);
+  box-shadow: var(--dshg-shadow-soft);
+  color: var(--dshg-text-primary);
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  animation: dshg-tooltip-in 140ms var(--dshg-ease-spring) both;
+
+  &--side {
+    transform: translate(0, -50%);
+    animation-name: dshg-tooltip-in-side;
+  }
+}
+
+@keyframes dshg-tooltip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes dshg-tooltip-in-side {
+  from {
+    opacity: 0;
+    transform: translate(4px, -50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, -50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dshg-tooltip-layer {
+    animation: none;
+  }
+}

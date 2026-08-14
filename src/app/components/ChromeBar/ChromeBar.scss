@@ -1,0 +1,223 @@
+.dshg-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 12px;
+  background: var(--dshg-bg-primary);
+  border-bottom: 1px solid var(--dshg-element-soft);
+  user-select: none;
+  gap: 14px;
+  position: relative;
+  z-index: 30;
+
+
+  &.dshg-chrome--macos {
+    padding-left: 78px;
+  }
+}
+
+.dshg-chrome__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dshg-chrome__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--dshg-radius-sm);
+  border: 1px solid var(--dshg-border-subtle);
+  background: var(--dshg-element-subtle);
+  color: var(--dshg-text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--dshg-element-soft);
+    color: var(--dshg-text-primary);
+    border-color: var(--dshg-border-base);
+  }
+}
+
+.dshg-chrome__identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dshg-chrome__app-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dshg-text-primary);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.dshg-chrome__breadcrumb {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dshg-chrome__project-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dshg-text-primary);
+  white-space: nowrap;
+}
+
+.dshg-chrome__path {
+  font-size: 11px;
+  color: var(--dshg-text-muted);
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dshg-chrome__status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid var(--dshg-border-subtle);
+  background: var(--dshg-element-subtle);
+  color: var(--dshg-text-muted);
+  flex-shrink: 0;
+
+  &.is-ready {
+    background: rgba(61, 154, 106, 0.12);
+    border-color: rgba(61, 154, 106, 0.3);
+    color: var(--dshg-success);
+
+    .dshg-chrome__pulse-dot {
+      background: var(--dshg-success);
+      box-shadow: 0 0 8px var(--dshg-success);
+      animation: dshg-pulse-glow 2s infinite ease-in-out;
+    }
+  }
+
+  &.is-starting {
+    background: rgba(201, 146, 46, 0.12);
+    border-color: rgba(201, 146, 46, 0.3);
+    color: var(--dshg-warning);
+
+    .dshg-chrome__pulse-dot {
+      background: var(--dshg-warning);
+      animation: dshg-pulse-glow 1.2s infinite ease-in-out;
+    }
+  }
+
+  &.is-error {
+    background: rgba(209, 106, 106, 0.12);
+    border-color: rgba(209, 106, 106, 0.3);
+    color: var(--dshg-error);
+
+    .dshg-chrome__pulse-dot {
+      background: var(--dshg-error);
+    }
+  }
+}
+
+.dshg-chrome__pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dshg-text-muted);
+}
+
+@keyframes dshg-pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+/* Center Apple Floating Tab Bar */
+.dshg-chrome__center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dshg-chrome__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dshg-chrome__quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dshg-chrome__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 27px;
+  padding: 0 8px;
+  font-size: 11.5px;
+  border-radius: var(--dshg-radius-sm);
+  border: 1px solid var(--dshg-border-subtle);
+  background: var(--dshg-element-subtle);
+  color: var(--dshg-text-secondary);
+  cursor: pointer;
+  transition: all 140ms ease;
+
+  &:hover {
+    background: var(--dshg-element-soft);
+    color: var(--dshg-text-primary);
+    border-color: var(--dshg-border-base);
+  }
+
+  &.dshg-chrome__logs-btn {
+    font-weight: 500;
+
+    &.is-active {
+      background: var(--dshg-accent-soft);
+      border-color: var(--dshg-border-base);
+      color: var(--dshg-text-primary);
+    }
+  }
+
+  &.dshg-chrome__cmd-btn {
+    gap: 4px;
+  }
+}
+
+.dshg-chrome__kbd {
+  font-family: var(--dshg-font-mono);
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--dshg-element-medium);
+  border: 1px solid var(--dshg-border-subtle);
+  color: var(--dshg-text-muted);
+}
+
+.dshg-chrome__action-label {
+  font-weight: 500;
+}
+
