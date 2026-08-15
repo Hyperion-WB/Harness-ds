@@ -12,8 +12,6 @@ use tokio::time::timeout;
 use crate::launch::{augmented_path, find_in_path};
 use crate::settings::AppSettings;
 
-const AGENT_DIR: &str = "deepseek-harness-gui";
-const PREFIX_DIR: &str = "agent-prefix";
 const PACKAGE_NAME: &str = "@deepseek-ai/dsh";
 const NPM_TIMEOUT: Duration = Duration::from_secs(180);
 
@@ -30,28 +28,7 @@ pub struct AgentStatus {
     pub error: Option<String>,
 }
 
-pub fn agent_prefix_dir() -> Result<PathBuf, String> {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(exe_dir) = exe.parent() {
-            let app_prefix = exe_dir.join("agent-prefix");
-            if app_prefix.is_dir() {
-                return Ok(app_prefix);
-            }
-            let resources_prefix = exe_dir.join("resources").join("agent-prefix");
-            if resources_prefix.is_dir() {
-                return Ok(resources_prefix);
-            }
-        }
-    }
-
-    let dir = dirs::data_local_dir()
-        .or_else(dirs::data_dir)
-        .ok_or_else(|| "无法解析应用数据目录".to_string())?
-        .join(AGENT_DIR)
-        .join(PREFIX_DIR);
-    fs::create_dir_all(&dir).map_err(|error| format!("无法创建 agent 前缀目录: {error}"))?;
-    Ok(dir)
-}
+pub use crate::paths::agent_prefix_dir;
 
 pub fn local_dsh_js_entry(prefix: &Path) -> Option<PathBuf> {
     let pkg_dir = prefix.join("node_modules").join("@deepseek-ai").join("dsh");
@@ -154,6 +131,7 @@ async fn run_npm(args: &[&str], path_var: &str) -> Result<String, String> {
         .env("PATH", path_var)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
+        .kill_on_drop(true)
         .stdin(Stdio::null());
     #[cfg(windows)]
     {
@@ -213,8 +191,11 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
             "install",
             "--prefix",
             &prefix_str,
+            "--prefer-offline",
             "--no-fund",
             "--no-audit",
+            "--progress=false",
+            "--loglevel=error",
             "--registry=https://registry.npmmirror.com",
             &spec,
         ],
@@ -226,6 +207,9 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
 
 pub async fn ensure_local_agent(settings: &AppSettings) -> Result<PathBuf, String> {
     let prefix = agent_prefix_dir()?;
+    if let Some(js) = local_dsh_js_entry(&prefix) {
+        return Ok(js);
+    }
     if let Some(bin) = local_dsh_binary(&prefix) {
         return Ok(bin);
     }

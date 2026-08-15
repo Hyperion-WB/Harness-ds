@@ -29,17 +29,47 @@ pub enum LaunchSource {
     Npx,
 }
 
+fn strip_ansi(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '\x1b' {
+            if chars.peek() == Some(&'[') {
+                chars.next();
+                while let Some(&next) = chars.peek() {
+                    chars.next();
+                    if next.is_alphabetic() || next == 'm' || next == 'K' || next == 'G' || next == 'H' {
+                        break;
+                    }
+                }
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
+}
+
 /// Parse the `dsh web:` announcement line printed after the webserver binds.
 ///
 /// Only loopback http URLs are accepted. A LAN suffix is ignored.
 pub fn parse_dsh_web_url(line: &str) -> Option<String> {
-    let rest = line.trim().strip_prefix("dsh web:")?.trim();
-    let url = rest.split_whitespace().next()?;
-    if is_loopback_http(url) {
-        Some(url.to_string())
-    } else {
-        None
+    let clean = strip_ansi(line);
+    let trimmed_line = clean.trim();
+    if let Some(rest) = trimmed_line.strip_prefix("dsh web:") {
+        if let Some(url) = rest.split_whitespace().next() {
+            if is_loopback_http(url) {
+                return Some(url.trim_end_matches('/').to_string());
+            }
+        }
     }
+    for token in clean.split_whitespace() {
+        let trimmed = token.trim_matches(|c: char| !c.is_alphanumeric() && c != ':' && c != '/' && c != '.');
+        if is_loopback_http(trimmed) {
+            return Some(trimmed.trim_end_matches('/').to_string());
+        }
+    }
+    None
 }
 
 pub fn is_loopback_http(url: &str) -> bool {

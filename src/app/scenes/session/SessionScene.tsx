@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bug,
+  CheckCircle2,
   ChevronDown,
   Code,
   Download,
@@ -18,6 +19,7 @@ import { getGatewayClient } from "@/infrastructure/dshGatewayClient";
 import type { MuxFrame } from "@/infrastructure/dshTypes";
 import { ChatMessageList } from "./components/ChatMessageList";
 import { ChatInput } from "./components/ChatInput";
+import { ConnectionIndicator } from "@/app/components/ConnectionIndicator/ConnectionIndicator";
 import "./SessionScene.scss";
 
 interface SessionSceneProps {
@@ -33,6 +35,8 @@ const HERO_SUGGESTIONS = [
 
 export function SessionScene({ active = true }: SessionSceneProps) {
   const harness = useAppStore((s) => s.harness);
+  const agent = useAppStore((s) => s.agent);
+  const updateAgentNow = useAppStore((s) => s.updateAgentNow);
   const logs = useAppStore((s) => s.logs);
   const restartHarness = useAppStore((s) => s.restartHarness);
   const workspacePath = useAppStore((s) => s.workspacePath);
@@ -65,6 +69,8 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const [connected, setConnected] = useState(false);
   const [sessionModel, setSessionModel] = useState<string>(defaultModel.model);
   const [showTopbarModelMenu, setShowTopbarModelMenu] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
   const topbarModelRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
@@ -235,6 +241,84 @@ export function SessionScene({ active = true }: SessionSceneProps) {
     }
   }, [harness.state, harness.url, activeSessionId, setMessages, setIsStreaming, setPendingQuestions, setPendingApproval]);
 
+  async function handleDownloadCore() {
+    setIsDownloading(true);
+    try {
+      await updateAgentNow();
+      setDownloadSuccess(true);
+      if (workspacePath) {
+        await restartHarness();
+      }
+    } catch (e) {
+      console.error("Failed to download core agent", e);
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
+  // 1. Initial State: Core Engine Not Downloaded Yet
+  if (!agent.installedVersion) {
+    return (
+      <div className="dshg-session dshg-session--loading">
+        <div className="dshg-session__loading-card">
+          <div className="dshg-session__loading-spinner">
+            <FishLogo size={48} />
+          </div>
+          <h3>DeepSeek Harness 智能引擎初始化</h3>
+          <p>
+            首次运行需要下载核心 Agent 引擎组件（<code>@deepseek-ai/dsh</code>）。
+            <br />
+            核心文件将安全保存在客户端安装目录（<code>data/agent-prefix/</code>），不占用 C 盘空间。
+          </p>
+
+          {isDownloading ? (
+            <>
+              <div className="dshg-session__loading-progress">
+                <div className="dshg-session__loading-bar is-animating" />
+              </div>
+              <div className="dshg-session__loading-steps">
+                <div className="dshg-session__loading-step is-active">
+                  <span className="dshg-session__step-dot" />
+                  <span>正在从国内高速镜像源 (npmmirror) 下载核心包...</span>
+                </div>
+                <div className="dshg-session__loading-step is-active">
+                  <span className="dshg-session__step-dot" />
+                  <span>正在解压并写入客户端数据目录...</span>
+                </div>
+              </div>
+              {logs.length > 0 && (
+                <div className="dshg-session__micro-logs">
+                  <div className="dshg-session__micro-logs-head">
+                    <Terminal size={12} />
+                    <span>实时下载日志 ({logs.length} 行)</span>
+                  </div>
+                  <pre className="dshg-session__micro-logs-body">
+                    {logs.slice(-5).join("\n")}
+                  </pre>
+                </div>
+              )}
+            </>
+          ) : downloadSuccess ? (
+            <div className="dshg-session__download-success">
+              <CheckCircle2 size={32} color="#22c55e" />
+              <h4>核心组件下载完成，正在连接...</h4>
+            </div>
+          ) : (
+            <div className="dshg-session__download-actions">
+              <Button
+                variant="primary"
+                onClick={() => void handleDownloadCore()}
+              >
+                <Download size={15} />
+                <span>点击下载核心文件 (约需 3-5 秒)</span>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!workspacePath && harness.state === "idle") {
     return (
       <div className="dshg-session dshg-session--empty">
@@ -394,6 +478,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             {messages.length > 0 && (
               <span className="dshg-session__stats-tag">{messages.length} 条消息</span>
             )}
+            <ConnectionIndicator connected={connected} />
           </div>
         </div>
 
@@ -506,7 +591,9 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             onSend={(text) => void sendPrompt(text)}
             onCancel={() => void cancelGeneration()}
             isStreaming={isStreaming}
-            disabled={!connected}
+            disabled={false}
+            connected={connected}
+            onReconnect={() => void restartHarness()}
             activePreset={activePreset}
             onSelectPreset={(p) => void setActivePreset(p)}
             activeModel={sessionModel}

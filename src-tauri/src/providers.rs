@@ -54,15 +54,7 @@ pub struct UpsertProviderInput {
 }
 
 fn dsh_home() -> Result<PathBuf, String> {
-    if let Ok(value) = std::env::var("DSH_HOME") {
-        let path = PathBuf::from(value);
-        if !path.as_os_str().is_empty() {
-            return Ok(path);
-        }
-    }
-    dirs::home_dir()
-        .map(|home| home.join(".dsh"))
-        .ok_or_else(|| "无法解析用户主目录".to_string())
+    crate::paths::dsh_home_dir()
 }
 
 fn ensure_dsh_home() -> Result<PathBuf, String> {

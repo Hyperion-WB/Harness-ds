@@ -103,6 +103,21 @@ export class DshGatewayClient {
     }
   }
 
+  public async reconnectNow(): Promise<boolean> {
+    log.info("Manual reconnect triggered for", this.baseUrl);
+    if (this.muxWs) {
+      try { this.muxWs.close(); } catch {}
+      this.muxWs = null;
+    }
+    if (this.hostWs) {
+      try { this.hostWs.close(); } catch {}
+      this.hostWs = null;
+    }
+    this.initMuxWs();
+    this.initHostWs();
+    return this.pingHttp();
+  }
+
   private startHttpPolling(): void {
     if (this.pollTimer) return;
     this.pollTimer = window.setInterval(() => {

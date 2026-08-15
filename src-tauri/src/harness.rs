@@ -12,7 +12,7 @@ use tokio::time::timeout;
 
 use crate::agent::ensure_local_agent;
 use crate::launch::{augmented_path, parse_dsh_web_url, resolve_launch, LaunchSource};
-use crate::settings::{collect_provider_env, has_any_provider_key, AppSettings};
+use crate::settings::{collect_provider_env, AppSettings};
 
 const READY_TIMEOUT: Duration = Duration::from_secs(120);
 
@@ -92,14 +92,7 @@ impl HarnessManager {
         if !std::path::Path::new(&workspace).is_dir() {
             return Err(format!("工作区不存在: {workspace}"));
         }
-        let shell_keys = has_any_provider_key(settings)?;
-        let dsh_keys = crate::providers::has_configured_provider().unwrap_or(false);
-        if !shell_keys && !dsh_keys {
-            return Err(
-                "未配置任何模型。请在设置 → 模型中添加提供商并填写 API Key。".to_string(),
-            );
-        }
-        let mut provider_env = collect_provider_env(settings)?;
+        let mut provider_env = collect_provider_env(settings).unwrap_or_default();
         if let Ok(credentials) = crate::providers::collect_credential_env() {
             for (name, value) in credentials {
                 if !provider_env.iter().any(|(existing, _)| existing == &name) {
@@ -163,11 +156,16 @@ impl HarnessManager {
         for (name, value) in &provider_env {
             command.env(name, value);
         }
-        if let Some(dsh_home) = &settings.dsh_home_override {
-            if !dsh_home.trim().is_empty() {
-                command.env("DSH_HOME", dsh_home.trim());
+        let dsh_home = if let Some(custom) = &settings.dsh_home_override {
+            if !custom.trim().is_empty() {
+                std::path::PathBuf::from(custom.trim())
+            } else {
+                crate::paths::dsh_home_dir().unwrap_or_default()
             }
-        }
+        } else {
+            crate::paths::dsh_home_dir().unwrap_or_default()
+        };
+        command.env("DSH_HOME", &dsh_home);
 
         #[cfg(unix)]
         {
@@ -292,7 +290,14 @@ async fn read_output<R1, R2>(
             }
             line = stderr_lines.next_line() => {
                 match line {
-                    Ok(Some(text)) => push_log(&app, &mut logs, &text),
+                    Ok(Some(text)) => {
+                        push_log(&app, &mut logs, &text);
+                        if let Some(url) = parse_dsh_web_url(&text) {
+                            if let Some(tx) = url_tx.take() {
+                                let _ = tx.send(Ok(url));
+                            }
+                        }
+                    }
                     Ok(None) => {}
                     Err(_) => {}
                 }

@@ -359,6 +359,28 @@
     background: #3b82f6;
   }
 
+  &__download-actions {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  &__download-success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+
+    h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #22c55e;
+    }
+  }
+
   &__micro-logs {
     width: 100%;
     text-align: left;

@@ -174,5 +174,13 @@ def main():
     icon_512.save(ICONS_DIR / "icon.ico", format="ICO", sizes=ico_sizes)
     print("Generated multi-resolution icon.ico with transparent alpha background!")
 
+    # Also update public/ web favicon so taskbar / webview use the EXACT same cute whale icon
+    public_dir = ROOT / "public"
+    if public_dir.is_dir():
+        icon_64 = icon_512.resize((64, 64), Image.Resampling.LANCZOS)
+        icon_64.save(public_dir / "favicon.png", format="PNG")
+        icon_512.save(public_dir / "icon.png", format="PNG")
+        print("Updated public/ favicon assets for perfect taskbar/window icon consistency!")
+
 if __name__ == "__main__":
     main()

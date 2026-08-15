@@ -9,7 +9,6 @@ use crate::launch::{
     KEYRING_SERVICE, KEYRING_USER_ANTHROPIC, KEYRING_USER_DEEPSEEK, KEYRING_USER_OPENAI,
 };
 
-const SETTINGS_DIR: &str = "deepseek-harness-gui";
 const SETTINGS_FILE: &str = "settings.json";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -92,11 +91,8 @@ impl Default for AppSettings {
 }
 
 pub fn settings_path() -> Result<PathBuf, String> {
-    let dir = dirs::config_dir()
-        .ok_or_else(|| "无法解析用户配置目录".to_string())?
-        .join(SETTINGS_DIR);
-    fs::create_dir_all(&dir).map_err(|error| format!("无法创建配置目录: {error}"))?;
-    Ok(dir.join(SETTINGS_FILE))
+    let root = crate::paths::app_data_root();
+    Ok(root.join(SETTINGS_FILE))
 }
 
 pub fn load_settings() -> Result<AppSettings, String> {

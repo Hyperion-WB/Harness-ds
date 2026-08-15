@@ -20,6 +20,8 @@ interface ChatInputProps {
   onCancel?: () => void;
   isStreaming?: boolean;
   disabled?: boolean;
+  connected?: boolean;
+  onReconnect?: () => void;
   activePreset?: string;
   onSelectPreset?: (preset: string) => void;
   activeModel?: string;
@@ -49,6 +51,8 @@ export function ChatInput({
   onCancel,
   isStreaming = false,
   disabled = false,
+  connected = true,
+  onReconnect,
   activePreset = "standard",
   onSelectPreset,
   activeModel,
@@ -93,9 +97,9 @@ export function ChatInput({
       }
       if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
-        const selected = SLASH_COMMANDS[slashIndex];
-        if (selected) {
-          setText(`${selected.cmd} `);
+        const selectedCmd = SLASH_COMMANDS[slashIndex];
+        if (selectedCmd) {
+          setText(`${selectedCmd.cmd} `);
           setShowSlashMenu(false);
         }
         return;
@@ -115,7 +119,7 @@ export function ChatInput({
   function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const val = e.target.value;
     setText(val);
-    if (val.startsWith("/")) {
+    if (val.startsWith("/") && !val.includes(" ")) {
       setShowSlashMenu(true);
     } else {
       setShowSlashMenu(false);
@@ -123,7 +127,10 @@ export function ChatInput({
   }
 
   function handleSend() {
-    if (!text.trim() || isStreaming || disabled) return;
+    if (!text.trim() || disabled) return;
+    if (!connected && onReconnect) {
+      onReconnect();
+    }
     onSend(text.trim());
     setText("");
     setShowSlashMenu(false);
@@ -186,7 +193,13 @@ export function ChatInput({
           ref={textareaRef}
           value={text}
           disabled={disabled}
-          placeholder={isStreaming ? "智能体正在思考中..." : "输入消息、需求或 / 快捷命令 (Enter 发送, Shift+Enter 换行)..."}
+          placeholder={
+            isStreaming
+              ? "智能体正在思考中..."
+              : !connected
+                ? "Agent 服务未就绪，输入提示词并在连接后发送..."
+                : "输入消息、需求或 / 快捷命令 (Enter 发送, Shift+Enter 换行)..."
+          }
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           className="dshg-chat-textarea"
@@ -242,7 +255,7 @@ export function ChatInput({
                   }}
                 >
                   <Sparkles size={13} />
-                  <span>{activeModel || "默认模型"}</span>
+                  <span>{availableModels.find((m) => m.id === activeModel)?.name || activeModel || "默认模型"}</span>
                 </button>
 
                 {showModelsMenu && (
