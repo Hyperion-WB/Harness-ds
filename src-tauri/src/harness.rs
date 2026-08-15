@@ -14,7 +14,7 @@ use crate::agent::ensure_local_agent;
 use crate::launch::{augmented_path, parse_dsh_web_url, resolve_launch, LaunchSource};
 use crate::settings::{collect_provider_env, has_any_provider_key, AppSettings};
 
-const READY_TIMEOUT: Duration = Duration::from_secs(90);
+const READY_TIMEOUT: Duration = Duration::from_secs(120);
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]

@@ -39,12 +39,21 @@
   transition: all 160ms cubic-bezier(0.32, 0.72, 0, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 
+  &__icon {
+    color: #3b82f6;
+    flex-shrink: 0;
+  }
+
   &:hover {
     color: var(--dshg-text-primary);
     background: var(--dshg-element-medium);
     border-color: var(--dshg-border-base);
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+
+    .dshg-chat-quick-pill__icon {
+      transform: scale(1.1);
+    }
   }
 
   &:active {

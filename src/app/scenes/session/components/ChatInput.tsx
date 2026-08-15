@@ -2,9 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowUp,
   Bot,
+  Bug,
   Compass,
+  FileText,
+  GitCommit,
+  Search,
   Sparkles,
   Square,
+  TestTube2,
+  Zap,
 } from "lucide-react";
 import type { AgentPresetItem } from "@/infrastructure/dshTypes";
 import "./ChatInput.scss";
@@ -18,7 +24,7 @@ interface ChatInputProps {
   onSelectPreset?: (preset: string) => void;
   activeModel?: string;
   onSelectModel?: (model: string) => void;
-  availableModels?: Array<{ id: string; name: string }>;
+  availableModels?: Array<{ id: string; name: string; desc?: string; tag?: string }>;
   presets?: AgentPresetItem[];
 }
 
@@ -30,12 +36,12 @@ const SLASH_COMMANDS = [
 ];
 
 const PROMPT_TEMPLATES = [
-  { label: "⚡ 深度审查", prompt: "请审查当前工作区的核心代码逻辑，指出潜在的设计隐患与性能瓶颈。" },
-  { label: "🐞 排查报错", prompt: "请帮我排查当前工程的错误报错，分析根本原因并给出精准修复方案。" },
-  { label: "🚀 性能优化", prompt: "请分析当前模块的运行效率，并给出性能优化与重构方案。" },
-  { label: "📝 单元测试", prompt: "请为当前组件或核心模块编写完整的单元测试用例，覆盖边界条件。" },
-  { label: "📖 生成文档", prompt: "请为当前代码模块生成规范清晰的中文 API 接口与使用文档。" },
-  { label: "💬 Git Commit", prompt: "请根据当前修改内容生成符合语义化规范的 Git Commit Message。" },
+  { id: "review", icon: Search, label: "深度审查", prompt: "请审查当前工作区的核心代码逻辑，指出潜在的设计隐患与性能瓶颈。" },
+  { id: "debug", icon: Bug, label: "排查报错", prompt: "请帮我排查当前工程的错误报错，分析根本原因并给出精准修复方案。" },
+  { id: "perf", icon: Zap, label: "性能优化", prompt: "请分析当前模块的运行效率，并给出性能优化与重构方案。" },
+  { id: "test", icon: TestTube2, label: "单元测试", prompt: "请为当前组件或核心模块编写完整的单元测试用例，覆盖边界条件。" },
+  { id: "doc", icon: FileText, label: "生成文档", prompt: "请为当前代码模块生成规范清晰的中文 API 接口与使用文档。" },
+  { id: "git", icon: GitCommit, label: "Git Commit", prompt: "请根据当前修改内容生成符合语义化规范的 Git Commit Message。" },
 ];
 
 export function ChatInput({
@@ -130,20 +136,24 @@ export function ChatInput({
     <div className="dshg-chat-input-box">
       {/* Quick Prompt Pills Bar */}
       <div className="dshg-chat-quick-pills">
-        {PROMPT_TEMPLATES.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            className="dshg-chat-quick-pill"
-            onClick={() => {
-              setText(item.prompt);
-              textareaRef.current?.focus();
-            }}
-            title={item.prompt}
-          >
-            {item.label}
-          </button>
-        ))}
+        {PROMPT_TEMPLATES.map((item) => {
+          const IconComp = item.icon;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className="dshg-chat-quick-pill"
+              onClick={() => {
+                setText(item.prompt);
+                textareaRef.current?.focus();
+              }}
+              title={item.prompt}
+            >
+              <IconComp size={12} className="dshg-chat-quick-pill__icon" />
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Slash command suggestions popup */}

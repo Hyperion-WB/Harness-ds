@@ -160,9 +160,10 @@ pub fn run() {
 
             if shortcut_enabled {
                 let shortcut = commands::get_default_shortcut();
-                app.global_shortcut()
-                    .register(shortcut)
-                    .map_err(|error| format!("注册全局快捷键失败: {error}"))?;
+                let _ = app.global_shortcut().unregister(shortcut);
+                if let Err(error) = app.global_shortcut().register(shortcut) {
+                    eprintln!("注册全局快捷键警告 (跳过已占用快捷键): {error}");
+                }
             }
 
             let show_item = MenuItemBuilder::with_id("show", "显示窗口").build(app)?;

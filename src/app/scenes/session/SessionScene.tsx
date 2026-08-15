@@ -1,10 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Bug,
+  ChevronDown,
   Code,
   Download,
   Folder,
   Loader2,
+  Search,
+  Sparkles,
   Terminal,
+  TestTube2,
   Trash2,
 } from "lucide-react";
 import { Button, FishLogo } from "@/component-library";
@@ -20,10 +25,10 @@ interface SessionSceneProps {
 }
 
 const HERO_SUGGESTIONS = [
-  { title: "🔍 深度代码审查", prompt: "请审查当前工作区核心代码的架构设计与潜在性能瓶颈。" },
-  { title: "⚡ 创建新功能模块", prompt: "我想为当前项目添加一个新功能，请先梳理实现思路与模块设计。" },
-  { title: "🐛 排查并修复报错", prompt: "检查当前项目的控制台或构建错误，并给出修复补丁。" },
-  { title: "🛠️ 编写测试用例", prompt: "为核心逻辑编写完整的单元测试用例，覆盖边界条件。" },
+  { icon: Search, title: "深度代码审查", prompt: "请审查当前工作区核心代码的架构设计与潜在性能瓶颈。" },
+  { icon: Sparkles, title: "创建新功能模块", prompt: "我想为当前项目添加一个新功能，请先梳理实现思路与模块设计。" },
+  { icon: Bug, title: "排查并修复报错", prompt: "检查当前项目的控制台或构建错误，并给出修复补丁。" },
+  { icon: TestTube2, title: "编写测试用例", prompt: "为核心逻辑编写完整的单元测试用例，覆盖边界条件。" },
 ];
 
 export function SessionScene({ active = true }: SessionSceneProps) {
@@ -34,6 +39,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const openWorkspace = useAppStore((s) => s.openWorkspace);
   const toggleLogsDrawer = useAppStore((s) => s.toggleLogsDrawer);
   const defaultModel = useAppStore((s) => s.defaultModel);
+  const modelProviders = useAppStore((s) => s.modelProviders);
   const activePreset = useAppStore((s) => s.activePreset);
   const setActivePreset = useAppStore((s) => s.setActivePreset);
   const openInEditor = useAppStore((s) => s.openInEditor);
@@ -58,9 +64,56 @@ export function SessionScene({ active = true }: SessionSceneProps) {
 
   const [connected, setConnected] = useState(false);
   const [sessionModel, setSessionModel] = useState<string>(defaultModel.model);
+  const [showTopbarModelMenu, setShowTopbarModelMenu] = useState(false);
+  const topbarModelRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
   const sessionTitle = activeSession?.title || (messages.length > 0 ? "进行中会话" : "新对话");
+
+  // Aggregate all available models from providers
+  const allAvailableModels = useMemo(() => {
+    const list: Array<{ id: string; name: string; provider: string; desc?: string; tag?: string }> = [
+      {
+        id: "deepseek-chat",
+        name: "DeepSeek-V3 (Chat)",
+        provider: "deepseek-official",
+        desc: "通用强大多语言编程与综合对话",
+        tag: "默认",
+      },
+      {
+        id: "deepseek-reasoner",
+        name: "DeepSeek-R1 (Reasoner)",
+        provider: "deepseek-official",
+        desc: "深度长链思考与高难度算法架构",
+        tag: "深度推理",
+      },
+    ];
+
+    for (const p of modelProviders) {
+      for (const m of p.models || []) {
+        if (!list.some((item) => item.id === m)) {
+          list.push({
+            id: m,
+            name: m,
+            provider: p.displayName || p.id,
+            desc: `提供商: ${p.displayName || p.id}`,
+          });
+        }
+      }
+    }
+    return list;
+  }, [modelProviders]);
+
+  // Close model menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (topbarModelRef.current && !topbarModelRef.current.contains(e.target as Node)) {
+        setShowTopbarModelMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Subscribe to Mux streaming frames when harness is ready
   useEffect(() => {
@@ -203,9 +256,43 @@ export function SessionScene({ active = true }: SessionSceneProps) {
         <div className="dshg-session__loading-card">
           {harness.state === "starting" ? (
             <>
-              <Loader2 size={36} className="is-spinning" />
-              <h3>正在启动 DeepSeek Harness 引擎...</h3>
-              <p>初始化 Agent 环境与模型网关连接，请稍候</p>
+              <div className="dshg-session__loading-spinner">
+                <Loader2 size={36} className="is-spinning" />
+              </div>
+              <h3>正在启动 DeepSeek Harness 智能引擎...</h3>
+              <p>采用高速镜像源初始化 Agent 环境与模型网关连接</p>
+
+              {/* Real-time Loading Progress Bar */}
+              <div className="dshg-session__loading-progress">
+                <div className="dshg-session__loading-bar is-animating" />
+              </div>
+
+              <div className="dshg-session__loading-steps">
+                <div className="dshg-session__loading-step is-active">
+                  <span className="dshg-session__step-dot" />
+                  <span>1. 检查本地 Agent 运行时与高速缓存</span>
+                </div>
+                <div className="dshg-session__loading-step is-active">
+                  <span className="dshg-session__step-dot" />
+                  <span>2. 启动 DeepSeek Harness 网关服务</span>
+                </div>
+                <div className="dshg-session__loading-step is-active">
+                  <span className="dshg-session__step-dot" />
+                  <span>3. 建立 WebSocket 实时双向流管道</span>
+                </div>
+              </div>
+
+              {logs.length > 0 && (
+                <div className="dshg-session__micro-logs">
+                  <div className="dshg-session__micro-logs-head">
+                    <Terminal size={12} />
+                    <span>实时启动日志 ({logs.length} 行)</span>
+                  </div>
+                  <pre className="dshg-session__micro-logs-body">
+                    {logs.slice(-5).join("\n")}
+                  </pre>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -262,7 +349,47 @@ export function SessionScene({ active = true }: SessionSceneProps) {
         <div className="dshg-session__title-area">
           <span className="dshg-session__current-title">{sessionTitle}</span>
           <div className="dshg-session__tags">
-            <span className="dshg-session__model-tag">{sessionModel}</span>
+            {/* Claude-style Model Switcher in Topbar */}
+            <div className="dshg-session__model-picker-wrap" ref={topbarModelRef}>
+              <button
+                type="button"
+                className="dshg-session__model-tag is-interactive"
+                onClick={() => setShowTopbarModelMenu(!showTopbarModelMenu)}
+                title="点击快速切换当前会话模型"
+              >
+                <Sparkles size={11} className="dshg-session__model-sparkle" />
+                <span>{allAvailableModels.find((m) => m.id === sessionModel)?.name || sessionModel}</span>
+                <ChevronDown size={10} className={`dshg-session__chevron ${showTopbarModelMenu ? "is-open" : ""}`} />
+              </button>
+
+              {showTopbarModelMenu && (
+                <div className="dshg-topbar-model-menu">
+                  <div className="dshg-topbar-model-menu__head">
+                    <span>切换会话模型 (Model Switcher)</span>
+                  </div>
+                  <div className="dshg-topbar-model-menu__list">
+                    {allAvailableModels.map((m) => (
+                      <button
+                        key={m.id}
+                        type="button"
+                        className={`dshg-topbar-model-item ${sessionModel === m.id ? "is-selected" : ""}`}
+                        onClick={() => {
+                          setSessionModel(m.id);
+                          setShowTopbarModelMenu(false);
+                        }}
+                      >
+                        <div className="dshg-topbar-model-item__title">
+                          <span className="dshg-topbar-model-item__name">{m.name}</span>
+                          {m.tag && <span className="dshg-topbar-model-item__tag">{m.tag}</span>}
+                        </div>
+                        {m.desc && <span className="dshg-topbar-model-item__desc">{m.desc}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <span className="dshg-session__preset-tag">{activePreset}</span>
             {messages.length > 0 && (
               <span className="dshg-session__stats-tag">{messages.length} 条消息</span>
@@ -341,17 +468,25 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             </p>
 
             <div className="dshg-session__suggestions">
-              {HERO_SUGGESTIONS.map((item, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  className="dshg-session__suggestion-card"
-                  onClick={() => void sendPrompt(item.prompt)}
-                >
-                  <strong>{item.title}</strong>
-                  <span>{item.prompt}</span>
-                </button>
-              ))}
+              {HERO_SUGGESTIONS.map((item, idx) => {
+                const IconComp = item.icon;
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="dshg-session__suggestion-card"
+                    onClick={() => void sendPrompt(item.prompt)}
+                  >
+                    <div className="dshg-session__suggestion-header">
+                      <div className="dshg-session__suggestion-icon">
+                        <IconComp size={15} />
+                      </div>
+                      <strong className="dshg-session__suggestion-title">{item.title}</strong>
+                    </div>
+                    <span className="dshg-session__suggestion-prompt">{item.prompt}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -376,6 +511,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             onSelectPreset={(p) => void setActivePreset(p)}
             activeModel={sessionModel}
             onSelectModel={(m) => setSessionModel(m)}
+            availableModels={allAvailableModels}
           />
         </div>
       </main>

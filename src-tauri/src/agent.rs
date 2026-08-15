@@ -139,7 +139,7 @@ pub async fn fetch_latest_version(channel: &str) -> Result<String, String> {
         channel
     };
     let stdout = run_npm(
-        &["view", &format!("{PACKAGE_NAME}@{tag}"), "version"],
+        &["view", &format!("{PACKAGE_NAME}@{tag}"), "version", "--registry=https://registry.npmmirror.com"],
         &path_var,
     )
     .await?;
@@ -168,6 +168,7 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
             &prefix_str,
             "--no-fund",
             "--no-audit",
+            "--registry=https://registry.npmmirror.com",
             &spec,
         ],
         &path_var,
