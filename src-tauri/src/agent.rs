@@ -204,6 +204,7 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
         &path_var,
     )
     .await?;
+    let _ = crate::paths::ensure_dsh_home_node_modules();
     agent_status(settings).await
 }
 

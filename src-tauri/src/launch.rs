@@ -154,6 +154,38 @@ pub fn find_in_path(name: &str, path_var: &str) -> Option<PathBuf> {
     None
 }
 
+pub fn check_node_version(path_var: &str) -> Result<String, String> {
+    let node = find_in_path("node", path_var)
+        .ok_or_else(|| "未在系统中检测到 Node.js。请前往 https://nodejs.org 安装 Node.js (推荐 LTS v22.12+)。".to_string())?;
+    let mut cmd = std::process::Command::new(&node);
+    cmd.arg("--version").env("PATH", path_var);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        cmd.creation_flags(CREATE_NO_WINDOW);
+    }
+    let output = cmd
+        .output()
+        .map_err(|e| format!("无法执行 node --version: {e}"))?;
+    let ver_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    let clean_ver = ver_str.trim_start_matches('v');
+    let parts: Vec<u32> = clean_ver
+        .split('.')
+        .filter_map(|s| s.parse::<u32>().ok())
+        .collect();
+    if parts.len() >= 2 {
+        let major = parts[0];
+        let minor = parts[1];
+        if major < 22 || (major == 22 && minor < 12) {
+            return Err(format!(
+                "检测到当前 Node.js 版本为 {ver_str}，DeepSeek Harness 核心依赖 Node.js >= 22.12.0（以支持原生的 zstd 压缩与 TypeScript 剥离）。请前往 https://nodejs.org 升级至 Node.js v22 (LTS) 或 v24。"
+            ));
+        }
+    }
+    Ok(ver_str)
+}
+
 fn executable_names(name: &str) -> Vec<String> {
     if cfg!(windows) {
         vec![

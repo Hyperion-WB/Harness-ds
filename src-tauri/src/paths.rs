@@ -70,3 +70,31 @@ pub fn dsh_home_dir() -> Result<PathBuf, String> {
     fs::create_dir_all(&home).map_err(|e| format!("无法创建 dsh-home 数据目录: {e}"))?;
     Ok(home)
 }
+
+/// Ensure `dsh-home/node_modules` points to `agent-prefix/node_modules`
+/// so that Cordis plugin loader can resolve plugins when DSH_HOME is set.
+pub fn ensure_dsh_home_node_modules() -> Result<(), String> {
+    let home = dsh_home_dir()?;
+    let prefix = agent_prefix_dir()?;
+    let target = prefix.join("node_modules");
+    let link = home.join("node_modules");
+    if target.is_dir() && !link.exists() {
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            let mut cmd = std::process::Command::new("cmd");
+            cmd.args(["/C", "mklink", "/J", &link.display().to_string(), &target.display().to_string()])
+                .creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.output();
+            if !link.exists() {
+                let _ = std::os::windows::fs::symlink_dir(&target, &link);
+            }
+        }
+        #[cfg(unix)]
+        {
+            let _ = std::os::unix::fs::symlink(&target, &link);
+        }
+    }
+    Ok(())
+}

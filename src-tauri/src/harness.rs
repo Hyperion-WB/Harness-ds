@@ -144,11 +144,31 @@ impl HarnessManager {
             emit_status(app, &status);
         }
 
+        if let Err(node_err) = crate::launch::check_node_version(&path_var) {
+            let mut status = self.status.lock().await;
+            *status = HarnessStatus {
+                state: HarnessState::Error,
+                url: None,
+                workspace: Some(workspace.clone()),
+                pid: None,
+                source: Some(source.into()),
+                error: Some(node_err.clone()),
+                log_tail: vec![node_err.clone()],
+            };
+            emit_status(app, &status);
+            return Err(node_err);
+        }
+
+        let _ = crate::paths::ensure_dsh_home_node_modules();
+        let prefix = crate::paths::agent_prefix_dir().unwrap_or_default();
+        let node_modules = prefix.join("node_modules");
+
         let mut command = Command::new(&spec.program);
         command
             .args(&spec.args)
             .current_dir(&workspace)
             .env("PATH", &path_var)
+            .env("NODE_PATH", &node_modules)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true)
