@@ -124,7 +124,9 @@ fn package_spec(settings: &AppSettings) -> String {
 async fn run_npm(args: &[&str], path_var: &str) -> Result<String, String> {
     let npm = find_in_path("npm", path_var)
         .map(|p| p.display().to_string())
-        .unwrap_or_else(|| "npm".to_string());
+        .ok_or_else(|| {
+            "未在系统中检测到 Node.js / npm 运行环境。请先安装 Node.js (推荐 LTS v22+，https://nodejs.org) 并重启客户端。".to_string()
+        })?;
     let mut command = Command::new(&npm);
     command
         .args(args)

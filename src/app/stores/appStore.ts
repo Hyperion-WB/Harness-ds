@@ -575,7 +575,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const harness = await get().host.getHarnessStatus();
       get().setHarness(harness);
     } catch (error) {
-      set({ errorBanner: String(error) });
+      const msg = String(error);
+      set({ errorBanner: msg });
+      throw error;
     }
   },
 

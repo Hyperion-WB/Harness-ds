@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bug,
-  CheckCircle2,
   ChevronDown,
   Code,
   Download,
@@ -70,7 +69,6 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const [sessionModel, setSessionModel] = useState<string>(defaultModel.model);
   const [showTopbarModelMenu, setShowTopbarModelMenu] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [downloadSuccess, setDownloadSuccess] = useState(false);
   const topbarModelRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
@@ -241,16 +239,25 @@ export function SessionScene({ active = true }: SessionSceneProps) {
     }
   }, [harness.state, harness.url, activeSessionId, setMessages, setIsStreaming, setPendingQuestions, setPendingApproval]);
 
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
   async function handleDownloadCore() {
     setIsDownloading(true);
+    setDownloadError(null);
     try {
       await updateAgentNow();
-      setDownloadSuccess(true);
-      if (workspacePath) {
+      const updatedAgent = useAppStore.getState().agent;
+      if (!updatedAgent.installedVersion) {
+        const banner = useAppStore.getState().errorBanner;
+        setDownloadError(banner || "核心组件安装未返回版本号，请检查网络或 Node.js 环境");
+        return;
+      }
+      const ws = useAppStore.getState().workspacePath;
+      if (ws) {
         await restartHarness();
       }
-    } catch (e) {
-      console.error("Failed to download core agent", e);
+    } catch (e: any) {
+      setDownloadError(e?.message || String(e));
     } finally {
       setIsDownloading(false);
     }
@@ -298,10 +305,22 @@ export function SessionScene({ active = true }: SessionSceneProps) {
                 </div>
               )}
             </>
-          ) : downloadSuccess ? (
-            <div className="dshg-session__download-success">
-              <CheckCircle2 size={32} color="#22c55e" />
-              <h4>核心组件下载完成，正在连接...</h4>
+          ) : downloadError ? (
+            <div className="dshg-session__download-error">
+              <div className="dshg-session__error-icon">!</div>
+              <h4>下载/初始化未完成</h4>
+              <p className="dshg-session__error-desc">{downloadError}</p>
+              {logs.length > 0 && (
+                <pre className="dshg-session__error-logs">
+                  {logs.slice(-8).join("\n")}
+                </pre>
+              )}
+              <div className="dshg-session__error-actions">
+                <Button variant="primary" onClick={() => void handleDownloadCore()}>
+                  重新尝试下载
+                </Button>
+                <Button onClick={toggleLogsDrawer}>查看完整日志</Button>
+              </div>
             </div>
           ) : (
             <div className="dshg-session__download-actions">

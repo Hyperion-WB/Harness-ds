@@ -93,6 +93,27 @@ pub fn augmented_path() -> String {
     if let Ok(prefix) = agent_prefix_dir() {
         extras.push(prefix.join("node_modules").join(".bin").display().to_string());
     }
+
+    #[cfg(windows)]
+    {
+        extras.push("C:\\Program Files\\nodejs".into());
+        extras.push("C:\\Program Files (x86)\\nodejs".into());
+        if let Ok(prog_files) = env::var("ProgramFiles") {
+            extras.push(format!("{prog_files}\\nodejs"));
+        }
+        if let Ok(prog_files_x86) = env::var("ProgramFiles(x86)") {
+            extras.push(format!("{prog_files_x86}\\nodejs"));
+        }
+        if let Ok(app_data) = env::var("APPDATA") {
+            extras.push(format!("{app_data}\\npm"));
+            extras.push(format!("{app_data}\\nvm"));
+        }
+        if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
+            extras.push(format!("{local_app_data}\\Programs\\node"));
+            extras.push(format!("{local_app_data}\\pnpm"));
+        }
+    }
+
     if let Some(home) = dirs::home_dir() {
         extras.push(home.join(".local/bin").display().to_string());
         extras.push(home.join(".local/share/pnpm").display().to_string());
@@ -100,6 +121,8 @@ pub fn augmented_path() -> String {
         extras.push(home.join(".npm-global/bin").display().to_string());
         extras.push(home.join("AppData/Roaming/npm").display().to_string());
         extras.push(home.join("AppData/Local/pnpm").display().to_string());
+        extras.push(home.join("scoop").join("shims").display().to_string());
+        extras.push(home.join("scoop").join("apps").join("nodejs").join("current").join("bin").display().to_string());
     }
     extras.extend([
         "/opt/homebrew/bin".into(),
