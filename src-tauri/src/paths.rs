@@ -77,23 +77,37 @@ pub fn ensure_dsh_home_node_modules() -> Result<(), String> {
     let home = dsh_home_dir()?;
     let prefix = agent_prefix_dir()?;
     let target = prefix.join("node_modules");
-    let link = home.join("node_modules");
-    if target.is_dir() && !link.exists() {
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-            let mut cmd = std::process::Command::new("cmd");
-            cmd.args(["/C", "mklink", "/J", &link.display().to_string(), &target.display().to_string()])
-                .creation_flags(CREATE_NO_WINDOW);
-            let _ = cmd.output();
-            if !link.exists() {
-                let _ = std::os::windows::fs::symlink_dir(&target, &link);
-            }
+    if !target.is_dir() {
+        return Ok(());
+    }
+
+    let link_targets = vec![
+        home.join("node_modules"),
+        home.join("profiles").join("web").join("node_modules"),
+        home.join("profiles").join("default").join("node_modules"),
+    ];
+
+    for link in link_targets {
+        if let Some(parent) = link.parent() {
+            let _ = fs::create_dir_all(parent);
         }
-        #[cfg(unix)]
-        {
-            let _ = std::os::unix::fs::symlink(&target, &link);
+        if !link.exists() {
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                let mut cmd = std::process::Command::new("cmd");
+                cmd.args(["/C", "mklink", "/J", &link.display().to_string(), &target.display().to_string()])
+                    .creation_flags(CREATE_NO_WINDOW);
+                let _ = cmd.output();
+                if !link.exists() {
+                    let _ = std::os::windows::fs::symlink_dir(&target, &link);
+                }
+            }
+            #[cfg(unix)]
+            {
+                let _ = std::os::unix::fs::symlink(&target, &link);
+            }
         }
     }
     Ok(())

@@ -193,7 +193,6 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
             "install",
             "--prefix",
             &prefix_str,
-            "--prefer-offline",
             "--no-fund",
             "--no-audit",
             "--progress=false",
@@ -210,6 +209,7 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
 
 pub async fn ensure_local_agent(settings: &AppSettings) -> Result<PathBuf, String> {
     let prefix = agent_prefix_dir()?;
+    let _ = crate::paths::ensure_dsh_home_node_modules();
     if let Some(js) = local_dsh_js_entry(&prefix) {
         return Ok(js);
     }
