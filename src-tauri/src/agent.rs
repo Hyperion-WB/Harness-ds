@@ -13,7 +13,7 @@ use crate::launch::{augmented_path, find_in_path};
 use crate::settings::AppSettings;
 
 const PACKAGE_NAME: &str = "@deepseek-ai/dsh";
-const NPM_TIMEOUT: Duration = Duration::from_secs(180);
+const NPM_TIMEOUT: Duration = Duration::from_secs(600);
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -29,6 +29,13 @@ pub struct AgentStatus {
 }
 
 pub use crate::paths::agent_prefix_dir;
+
+pub fn is_installation_complete(prefix: &Path) -> bool {
+    let flag_file = prefix.join(".install_complete");
+    let has_web_app = prefix.join("node_modules").join("@deepseek-ai").join("dsh-web-app").is_dir();
+    let has_dsh = prefix.join("node_modules").join("@deepseek-ai").join("dsh").is_dir();
+    (flag_file.is_file() || has_web_app) && has_dsh
+}
 
 pub fn local_dsh_js_entry(prefix: &Path) -> Option<PathBuf> {
     let pkg_dir = prefix.join("node_modules").join("@deepseek-ai").join("dsh");
@@ -185,6 +192,8 @@ pub async fn fetch_latest_version(channel: &str) -> Result<String, String> {
 
 pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String> {
     let prefix = agent_prefix_dir()?;
+    let flag_file = prefix.join(".install_complete");
+    let _ = fs::remove_file(&flag_file);
     let path_var = augmented_path();
     let spec = package_spec(settings);
     let prefix_str = prefix.display().to_string();
@@ -203,6 +212,7 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
         &path_var,
     )
     .await?;
+    let _ = fs::write(&flag_file, &spec);
     let _ = crate::paths::ensure_dsh_home_node_modules();
     agent_status(settings).await
 }
@@ -210,11 +220,13 @@ pub async fn install_agent(settings: &AppSettings) -> Result<AgentStatus, String
 pub async fn ensure_local_agent(settings: &AppSettings) -> Result<PathBuf, String> {
     let prefix = agent_prefix_dir()?;
     let _ = crate::paths::ensure_dsh_home_node_modules();
-    if let Some(js) = local_dsh_js_entry(&prefix) {
-        return Ok(js);
-    }
-    if let Some(bin) = local_dsh_binary(&prefix) {
-        return Ok(bin);
+    if is_installation_complete(&prefix) {
+        if let Some(js) = local_dsh_js_entry(&prefix) {
+            return Ok(js);
+        }
+        if let Some(bin) = local_dsh_binary(&prefix) {
+            return Ok(bin);
+        }
     }
     let status = install_agent(settings).await?;
     status

@@ -216,23 +216,25 @@ pub fn resolve_launch(settings: &AppSettings, path_var: &str) -> LaunchSpec {
     }
 
     if let Ok(prefix) = agent_prefix_dir() {
-        if let Some(js_entry) = local_dsh_js_entry(&prefix) {
-            if let Some(node) = find_in_path("node", path_var) {
-                let mut node_args = vec![js_entry.display().to_string()];
-                node_args.extend(args.clone());
+        if crate::agent::is_installation_complete(&prefix) {
+            if let Some(js_entry) = local_dsh_js_entry(&prefix) {
+                if let Some(node) = find_in_path("node", path_var) {
+                    let mut node_args = vec![js_entry.display().to_string()];
+                    node_args.extend(args.clone());
+                    return LaunchSpec {
+                        program: node.display().to_string(),
+                        args: node_args,
+                        source: LaunchSource::LocalPrefix,
+                    };
+                }
+            }
+            if let Some(dsh) = local_dsh_binary(&prefix) {
                 return LaunchSpec {
-                    program: node.display().to_string(),
-                    args: node_args,
+                    program: dsh.display().to_string(),
+                    args,
                     source: LaunchSource::LocalPrefix,
                 };
             }
-        }
-        if let Some(dsh) = local_dsh_binary(&prefix) {
-            return LaunchSpec {
-                program: dsh.display().to_string(),
-                args,
-                source: LaunchSource::LocalPrefix,
-            };
         }
     }
 
