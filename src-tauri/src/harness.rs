@@ -354,10 +354,11 @@ async fn terminate_child(child: &mut Child) {
     #[cfg(windows)]
     {
         if let Some(pid) = child.id() {
-            let _ = Command::new("taskkill")
-                .args(["/PID", &pid.to_string(), "/T", "/F"])
-                .status()
-                .await;
+            let mut cmd = Command::new("taskkill");
+            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            cmd.creation_flags(CREATE_NO_WINDOW);
+            let _ = cmd.status().await;
             let _ = child.wait().await;
             return;
         }

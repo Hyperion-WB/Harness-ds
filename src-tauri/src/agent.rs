@@ -31,6 +31,19 @@ pub struct AgentStatus {
 }
 
 pub fn agent_prefix_dir() -> Result<PathBuf, String> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            let app_prefix = exe_dir.join("agent-prefix");
+            if app_prefix.is_dir() {
+                return Ok(app_prefix);
+            }
+            let resources_prefix = exe_dir.join("resources").join("agent-prefix");
+            if resources_prefix.is_dir() {
+                return Ok(resources_prefix);
+            }
+        }
+    }
+
     let dir = dirs::data_local_dir()
         .or_else(dirs::data_dir)
         .ok_or_else(|| "无法解析应用数据目录".to_string())?
@@ -38,6 +51,40 @@ pub fn agent_prefix_dir() -> Result<PathBuf, String> {
         .join(PREFIX_DIR);
     fs::create_dir_all(&dir).map_err(|error| format!("无法创建 agent 前缀目录: {error}"))?;
     Ok(dir)
+}
+
+pub fn local_dsh_js_entry(prefix: &Path) -> Option<PathBuf> {
+    let pkg_dir = prefix.join("node_modules").join("@deepseek-ai").join("dsh");
+    let candidates = [
+        pkg_dir.join("dist").join("index.js"),
+        pkg_dir.join("dist").join("cli.js"),
+        pkg_dir.join("bin").join("dsh.js"),
+        pkg_dir.join("index.js"),
+    ];
+    for candidate in candidates {
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    let pkg_json = pkg_dir.join("package.json");
+    if let Ok(content) = std::fs::read_to_string(pkg_json) {
+        if let Ok(val) = serde_json::from_str::<serde_json::Value>(&content) {
+            if let Some(bin_str) = val.get("bin").and_then(|b| b.as_str()) {
+                let p = pkg_dir.join(bin_str);
+                if p.is_file() {
+                    return Some(p);
+                }
+            } else if let Some(bin_obj) = val.get("bin").and_then(|b| b.as_object()) {
+                if let Some(bin_val) = bin_obj.values().next().and_then(|v| v.as_str()) {
+                    let p = pkg_dir.join(bin_val);
+                    if p.is_file() {
+                        return Some(p);
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 pub fn local_dsh_binary(prefix: &Path) -> Option<PathBuf> {

@@ -245,6 +245,20 @@ pub fn run() {
                 });
             }
 
+            let handle_for_warmup = handle.clone();
+            tauri::async_runtime::spawn(async move {
+                if let Some(state) = handle_for_warmup.try_state::<AppState>() {
+                    let settings = state
+                        .settings
+                        .lock()
+                        .map(|s| s.clone())
+                        .unwrap_or_default();
+                    if settings.harness_command.trim().is_empty() {
+                        let _ = agent::ensure_local_agent(&settings).await;
+                    }
+                }
+            });
+
             schedule_agent_auto_update(handle.clone());
             let _ = handle.emit("host://ready", true);
             Ok(())
