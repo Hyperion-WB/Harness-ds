@@ -6,13 +6,15 @@ import {
 } from "./pluginCatalog";
 import type { PluginPackage } from "./types";
 
-const RADAR_PRIMARY_URL =
-  "https://raw.githubusercontent.com/AdamPlatin123/awesome-dsh-plugins/main/radar.json";
-const RADAR_FALLBACK_URL =
-  "https://cdn.jsdelivr.net/gh/AdamPlatin123/awesome-dsh-plugins@main/radar.json";
+const RADAR_SOURCES = [
+  "https://raw.githubusercontent.com/AdamPlatin123/awesome-dsh-plugins/main/PLUGINS.md",
+  "https://cdn.jsdelivr.net/gh/AdamPlatin123/awesome-dsh-plugins@main/PLUGINS.md",
+  "https://raw.githubusercontent.com/AdamPlatin123/awesome-dsh-plugins/main/generated/plugins-md-repos.json",
+  "https://cdn.jsdelivr.net/gh/AdamPlatin123/awesome-dsh-plugins@main/generated/plugins-md-repos.json",
+];
 
-const CACHE_KEY = "dsh_plugin_catalog_cache_v2";
-const CACHE_TIME_KEY = "dsh_plugin_catalog_synced_at_v2";
+const CACHE_KEY = "dsh_plugin_catalog_cache_v3";
+const CACHE_TIME_KEY = "dsh_plugin_catalog_synced_at_v3";
 
 export interface RadarSyncResult {
   success: boolean;
@@ -188,6 +190,79 @@ export function autoClassifyPlugin(raw: {
   return "agent";
 }
 
+/** Parse PLUGINS.md markdown tables into CuratedPlugin objects */
+export function parsePluginsMarkdown(markdown: string): CuratedPlugin[] {
+  const lines = markdown.split("\n");
+  const plugins: CuratedPlugin[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (
+      !trimmed.startsWith("|") ||
+      trimmed.includes("---") ||
+      trimmed.includes("插件 | 仓库") ||
+      trimmed.includes("Plugin | Repo")
+    ) {
+      continue;
+    }
+
+    const parts = trimmed
+      .split("|")
+      .map((p) => p.trim())
+      .filter((_, i, arr) => i > 0 && i < arr.length - 1);
+
+    if (parts.length >= 3) {
+      const rawName = parts[0].replace(/[`*]/g, "").trim();
+      const repoPart = parts[1];
+      const match =
+        repoPart.match(/\[([^\]]+)\]\((https:\/\/github\.com\/[^\)]+)\)/) ||
+        repoPart.match(/https:\/\/github\.com\/[^\s\)]+/);
+      const repoUrl = match ? match[2] || match[0] : "";
+      const slugMatch = repoUrl.match(/github\.com\/([^\/]+\/[^\/\s#\?]+)/);
+      const slug = slugMatch ? slugMatch[1] : "";
+      const descText = parts[2] || "";
+      const verdict = parts[3] || "";
+
+      if (rawName && slug) {
+        const packageName = `github:${slug}`;
+        const author = slug.split("/")[0] || "community";
+        const isOfficial = author.toLowerCase() === "deepseek" || slug.startsWith("deepseek-ai/");
+        const compatibility: CompatibilityStatus = verdict.includes("✅")
+          ? isOfficial
+            ? "official"
+            : "compatible"
+          : verdict.includes("❌")
+            ? "watch"
+            : "compatible";
+
+        const category = autoClassifyPlugin({
+          name: rawName,
+          packageName,
+          description: descText,
+          isOfficial,
+        });
+
+        plugins.push({
+          name: rawName,
+          packageName,
+          repoUrl,
+          description: {
+            zh: descText,
+            en: descText,
+          },
+          author,
+          isOfficial,
+          compatibility,
+          category,
+          tags: [category.toUpperCase(), ...(isOfficial ? ["Official"] : [])],
+        });
+      }
+    }
+  }
+
+  return plugins;
+}
+
 /** Normalize any incoming remote radar plugin record into standard CuratedPlugin shape. */
 export function normalizeRemotePlugin(raw: unknown): CuratedPlugin | null {
   if (!raw || typeof raw !== "object") return null;
@@ -295,41 +370,54 @@ export function getCachedCatalog(): { plugins: CuratedPlugin[]; syncedAt: number
   return { plugins: CURATED_PLUGINS, syncedAt: 0 };
 }
 
-/** Fetch remote radar catalog from GitHub / CDN source. */
+/** Fetch remote radar catalog from GitHub / CDN sources with high-resilience fallback. */
 export async function syncRemoteRadarCatalog(customUrl?: string): Promise<RadarSyncResult> {
-  const targetUrl = customUrl?.trim() || RADAR_PRIMARY_URL;
+  const sources = customUrl?.trim() ? [customUrl.trim(), ...RADAR_SOURCES] : RADAR_SOURCES;
 
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 6000);
+  for (const url of sources) {
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 4000);
 
-    let res = await fetch(targetUrl, { signal: controller.signal }).catch(() => null);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timer);
 
-    if (!res || !res.ok) {
-      res = await fetch(RADAR_FALLBACK_URL, { signal: controller.signal }).catch(() => null);
-    }
-    clearTimeout(timer);
+      if (!res.ok) continue;
 
-    if (res && res.ok) {
-      const raw = (await res.json()) as unknown;
-      let rawList: unknown[] = [];
+      let remotePlugins: CuratedPlugin[] = [];
 
-      if (Array.isArray(raw)) {
-        rawList = raw;
-      } else if (raw && typeof raw === "object") {
-        const dict = raw as Record<string, unknown>;
-        if (Array.isArray(dict.plugins)) {
-          rawList = dict.plugins;
-        } else if (Array.isArray(dict.items)) {
-          rawList = dict.items;
-        } else if (Array.isArray(dict.data)) {
-          rawList = dict.data;
+      if (url.endsWith(".md") || url.includes("PLUGINS.md")) {
+        const text = await res.text();
+        remotePlugins = parsePluginsMarkdown(text);
+      } else {
+        const raw = (await res.json()) as unknown;
+        let rawList: unknown[] = [];
+
+        if (Array.isArray(raw)) {
+          rawList = raw;
+        } else if (raw && typeof raw === "object") {
+          const dict = raw as Record<string, unknown>;
+          if (Array.isArray(dict.repos)) {
+            // Handle plugins-md-repos.json
+            rawList = (dict.repos as string[]).map((slug) => ({
+              name: slug.split("/")[1] || slug,
+              packageName: `github:${slug}`,
+              repoUrl: `https://github.com/${slug}`,
+              author: slug.split("/")[0] || "community",
+            }));
+          } else if (Array.isArray(dict.plugins)) {
+            rawList = dict.plugins;
+          } else if (Array.isArray(dict.items)) {
+            rawList = dict.items;
+          } else if (Array.isArray(dict.data)) {
+            rawList = dict.data;
+          }
         }
-      }
 
-      const remotePlugins: CuratedPlugin[] = rawList
-        .map(normalizeRemotePlugin)
-        .filter((p): p is CuratedPlugin => p !== null);
+        remotePlugins = rawList
+          .map(normalizeRemotePlugin)
+          .filter((p): p is CuratedPlugin => p !== null);
+      }
 
       if (remotePlugins.length > 0) {
         // Merge with built-in official plugins to ensure core plugins are never lost
@@ -350,10 +438,9 @@ export async function syncRemoteRadarCatalog(customUrl?: string): Promise<RadarS
           source: "remote",
         };
       }
+    } catch {
+      // try next source
     }
-  } catch (error) {
-    // network or parsing failed
-    console.warn("Failed to sync remote radar catalog:", error);
   }
 
   // Fallback to cache or builtin
@@ -364,6 +451,6 @@ export async function syncRemoteRadarCatalog(customUrl?: string): Promise<RadarS
     syncedAt: cached.syncedAt,
     newCount: cached.plugins.length,
     source: cached.syncedAt ? "cache" : "builtin",
-    error: "远程同步失败，已载入本地精选缓存",
+    error: "远程镜像连接超时，已快速载入本地精选清单",
   };
 }

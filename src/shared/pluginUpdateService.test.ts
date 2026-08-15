@@ -5,6 +5,7 @@ import {
   getCachedCatalog,
   isNewerVersion,
   normalizeRemotePlugin,
+  parsePluginsMarkdown,
 } from "./pluginUpdateService";
 import { CURATED_PLUGINS } from "./pluginCatalog";
 
@@ -89,11 +90,26 @@ describe("pluginUpdateService", () => {
     expect(normalized?.author).toBe("dsh-external");
   });
 
+  it("parses PLUGINS.md markdown tables accurately", () => {
+    const md = `
+# PLUGINS.md — 插件登记清单
+
+| 插件 | 仓库 | 说明 | 运行级 |
+| deepseek-heartflow | [yun520-1/deepseek-heartflow](https://github.com/yun520-1/deepseek-heartflow) | 心虫（AGI 第1层辨别门禁） | ✅ |
+| dsh-repo-context | [qing3a/dsh-repo-context](https://github.com/qing3a/dsh-repo-context) | 把 git 状态注入 system prompt | ✅ |
+| dsh-broken | [broken/repo](https://github.com/broken/repo) | 不兼容插件测试 | ❌ |
+`;
+    const plugins = parsePluginsMarkdown(md);
+    expect(plugins.length).toBe(3);
+    expect(plugins[0].name).toBe("deepseek-heartflow");
+    expect(plugins[0].packageName).toBe("github:yun520-1/deepseek-heartflow");
+    expect(plugins[0].compatibility).toBe("compatible");
+    expect(plugins[2].compatibility).toBe("watch");
+  });
+
   it("falls back to built-in curated plugins when cache is empty", () => {
     const catalog = getCachedCatalog();
     expect(catalog.plugins.length).toBeGreaterThanOrEqual(CURATED_PLUGINS.length);
     expect(catalog.plugins.some((p) => p.packageName === "@deepseek-ai/dsh-mcp-client")).toBe(true);
   });
 });
-
-

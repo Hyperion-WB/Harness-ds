@@ -36,10 +36,8 @@ export const PROVIDER_VENDORS: ProviderVendorPreset[] = [
     api: null,
     apiKeyEnv: "DEEPSEEK_API_KEY",
     models: [
-      { id: "deepseek-v4-flash", label: "DeepSeek-V4-Flash" },
-      { id: "deepseek-v4-pro", label: "DeepSeek-V4-Pro" },
-      { id: "deepseek-chat", label: "deepseek-chat (V3)" },
-      { id: "deepseek-reasoner", label: "deepseek-reasoner (R1)" },
+      { id: "deepseek-chat", label: "deepseek-chat (DeepSeek-V3)" },
+      { id: "deepseek-reasoner", label: "deepseek-reasoner (DeepSeek-R1)" },
     ],
     idEditable: false,
   },

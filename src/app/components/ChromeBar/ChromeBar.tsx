@@ -3,15 +3,13 @@ import {
   Command,
   Folder,
   Globe,
-  PanelLeft,
   Terminal,
 } from "lucide-react";
 import { isMacOSDesktopRuntime } from "@/infrastructure/runtime";
 import { useI18n } from "@/infrastructure/i18n";
-import { FishLogo, WindowControls } from "@/component-library";
+import { WindowControls } from "@/component-library";
 import { useAppStore } from "@/app/stores/appStore";
 import { useWindowChrome } from "@/app/hooks/useWindowChrome";
-import { FloatingTabBar } from "../FloatingTabBar/FloatingTabBar";
 import "./ChromeBar.scss";
 
 export function ChromeBar() {
@@ -21,7 +19,6 @@ export function ChromeBar() {
   const isLogsOpen = useAppStore((s) => s.isLogsDrawerOpen);
   const toggleLogsDrawer = useAppStore((s) => s.toggleLogsDrawer);
   const navCollapsed = useAppStore((s) => s.navCollapsed);
-  const toggleNav = useAppStore((s) => s.toggleNav);
   const openInEditor = useAppStore((s) => s.openInEditor);
   const openInTerminal = useAppStore((s) => s.openInTerminal);
   const revealInFileManager = useAppStore((s) => s.revealInFileManager);
@@ -49,18 +46,7 @@ export function ChromeBar() {
       onDoubleClick={onDoubleClick}
     >
       <div className="dshg-chrome__left">
-        <button
-          type="button"
-          className="dshg-chrome__toggle"
-          aria-label={navCollapsed ? t("nav.expand") : t("nav.collapse")}
-          aria-pressed={!navCollapsed}
-          onClick={toggleNav}
-        >
-          <PanelLeft size={14} />
-        </button>
-
         <div className="dshg-chrome__identity">
-          <FishLogo size={18} />
           {workspaceName ? (
             <div className="dshg-chrome__breadcrumb">
               <span className="dshg-chrome__project-name">{workspaceName}</span>
@@ -69,23 +55,12 @@ export function ChromeBar() {
               </span>
             </div>
           ) : (
-            <span className="dshg-chrome__app-title">{t("app.title")}</span>
+            <span className="dshg-chrome__app-title">DeepSeek Harness</span>
           )}
         </div>
-
-        <div className={`dshg-chrome__status-badge is-${harness.state}`}>
-          <span className="dshg-chrome__pulse-dot" />
-          <span>
-            {t(
-              `panel.${harness.state === "starting" ? "starting" : harness.state === "ready" ? "ready" : harness.state === "error" ? "error" : "idle"}`,
-            )}
-          </span>
-        </div>
       </div>
 
-      <div className="dshg-chrome__center" data-tauri-drag-region>
-        <FloatingTabBar />
-      </div>
+      <div className="dshg-chrome__center" data-tauri-drag-region />
 
       <div className="dshg-chrome__right">
         {workspacePath && (
@@ -154,7 +129,6 @@ export function ChromeBar() {
           <Terminal size={13.5} />
           <span>{t("toolbar.toggleLogs")}</span>
         </button>
-
 
         {!isMacOS && (
           <WindowControls

@@ -107,8 +107,8 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(217, 119, 87, 0.45) 0%, transparent 70%);
-  filter: blur(12px);
+  background: radial-gradient(circle, var(--dshg-glass-orb-a) 0%, transparent 70%);
+  filter: blur(14px);
   z-index: 0;
   animation: dshg-aurora 4s infinite alternate ease-in-out;
 }
@@ -138,18 +138,20 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid var(--dshg-border-subtle);
-  background: var(--dshg-bg-elevated);
-  box-shadow: var(--dshg-shadow-soft);
+  border: 1px solid var(--dshg-glass-border);
+  background: var(--dshg-floating-glass);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 var(--dshg-glass-highlight);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
   cursor: pointer;
   text-align: left;
-  transition: all 180ms cubic-bezier(0.32, 0.72, 0, 1);
+  transition: all 220ms cubic-bezier(0.32, 0.72, 0, 1);
 
   &:hover {
-    background: var(--dshg-element-soft);
+    background: var(--dshg-element-medium);
     border-color: var(--dshg-border-base);
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 var(--dshg-glass-highlight);
   }
 
   &:active {
@@ -157,12 +159,12 @@
   }
 
   &.is-primary {
-    border-color: rgba(217, 119, 87, 0.35);
-    background: linear-gradient(135deg, rgba(217, 119, 87, 0.12) 0%, var(--dshg-bg-elevated) 100%);
+    border-color: var(--dshg-border-base);
+    background: linear-gradient(135deg, var(--dshg-accent-soft) 0%, var(--dshg-floating-glass) 100%);
 
     .dshg-welcome__card-icon {
-      background: rgba(217, 119, 87, 0.2);
-      color: #d97757;
+      background: var(--dshg-accent-soft);
+      color: var(--dshg-accent-strong);
     }
   }
 }

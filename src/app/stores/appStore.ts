@@ -2,6 +2,18 @@ import { create } from "zustand";
 import { createHostAdapter, type HostAdapter } from "@/infrastructure/adapters/host";
 import { createLogger } from "@/infrastructure/logger";
 import {
+  getGatewayClient,
+  parseHistoryEvents,
+} from "@/infrastructure/dshGatewayClient";
+import type {
+  ApprovalOutcome,
+  ApprovalRequest,
+  AskUserQuestionAnswer,
+  AskUserQuestionItem,
+  ChatMessage,
+  SessionSummary,
+} from "@/infrastructure/dshTypes";
+import {
   IDLE_AGENT,
   IDLE_HARNESS,
   type AgentStatus,
@@ -30,7 +42,7 @@ const EMPTY_PROVIDER_KEYS: ProviderKeysStatus = {
 
 const EMPTY_DEFAULT_MODEL: DefaultModel = {
   provider: "deepseek-official",
-  model: "deepseek-v4-flash",
+  model: "deepseek-chat",
 };
 
 function anyProviderKey(status: ProviderKeysStatus): boolean {
@@ -71,6 +83,16 @@ export interface AppStore {
   sessionReloadKey: number;
   errorBanner: string | null;
   sessionMounted: boolean;
+
+  // Session state
+  sessions: SessionSummary[];
+  activeSessionId: string | null;
+  messages: ChatMessage[];
+  isStreaming: boolean;
+  pendingQuestions: AskUserQuestionItem[] | null;
+  pendingQuestionRpcId: string | null;
+  pendingApproval: ApprovalRequest | null;
+
   bootstrap: () => Promise<void>;
   setScene: (scene: SceneId) => void;
   toggleNav: () => void;
@@ -115,6 +137,22 @@ export interface AppStore {
   appendLog: (line: string) => void;
   clearLogs: () => void;
   clearBanner: () => void;
+
+  // Session actions
+  setSessions: (sessions: SessionSummary[]) => void;
+  setActiveSessionId: (id: string | null) => void;
+  setMessages: (messages: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
+  setIsStreaming: (streaming: boolean) => void;
+  setPendingQuestions: (questions: AskUserQuestionItem[] | null, rpcId?: string | null) => void;
+  setPendingApproval: (approval: ApprovalRequest | null) => void;
+  createSession: (workspacePath?: string) => Promise<string | null>;
+  selectSession: (sessionId: string) => Promise<void>;
+  renameSession: (sessionId: string, newTitle: string) => Promise<void>;
+  archiveSession: (sessionId: string) => Promise<void>;
+  sendPrompt: (text: string) => Promise<void>;
+  cancelGeneration: () => Promise<void>;
+  respondToQuestion: (answers: AskUserQuestionAnswer[]) => Promise<void>;
+  resolveApproval: (approvalId: string, outcome: ApprovalOutcome) => Promise<void>;
 }
 
 function asLocale(value: string | undefined): Locale {
@@ -122,7 +160,9 @@ function asLocale(value: string | undefined): Locale {
 }
 
 function asTheme(value: string | undefined): Theme {
-  if (value === "light" || value === "system") return value;
+  if (value === "dark" || value === "light" || value === "system") {
+    return value;
+  }
   return "dark";
 }
 
@@ -133,7 +173,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   theme: "dark",
   workspacePath: null,
   recentWorkspaces: [],
-  activeScene: "welcome",
+  activeScene: "session",
   navCollapsed: false,
   harness: IDLE_HARNESS,
   hasApiKey: false,
@@ -161,6 +201,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   errorBanner: null,
   sessionMounted: false,
 
+  sessions: [],
+  activeSessionId: null,
+  messages: [],
+  isStreaming: false,
+  pendingQuestions: null,
+  pendingQuestionRpcId: null,
+  pendingApproval: null,
+
   async bootstrap() {
     if (bootstrapped) return;
     bootstrapped = true;
@@ -184,6 +232,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
       const presetIdx = args.indexOf("--preset");
       const activePreset = presetIdx !== -1 && args[presetIdx + 1] ? args[presetIdx + 1] : "standard";
 
+      const defaultWorkspace = harness.workspace || settings.recentWorkspaces?.[0]?.path || null;
+
       set({
         ready: true,
         locale: asLocale(settings.locale),
@@ -205,10 +255,26 @@ export const useAppStore = create<AppStore>((set, get) => ({
         globalShortcutEnabled: settings.globalShortcutEnabled ?? true,
         harness,
         agent,
-        workspacePath: harness.workspace,
-        activeScene: harness.state === "ready" ? "session" : "welcome",
-        sessionMounted: harness.state === "ready",
+        workspacePath: defaultWorkspace,
+        activeScene: "session",
+        sessionMounted: true,
       });
+
+      // If we have a workspace and harness is ready, load sessions
+      if (harness.state === "ready" && harness.url) {
+        const client = getGatewayClient(harness.url);
+        if (client) {
+          const res = await client.listSessions().catch(() => ({ items: [] }));
+          const items = res.items || [];
+          set({ sessions: items });
+          if (items.length > 0) {
+            void get().selectSession(items[0].sessionId);
+          }
+        }
+      } else if (defaultWorkspace && anyProviderKey(providerKeys)) {
+        // Auto-start harness in the background for instant Claude-like readiness
+        void host.startHarness(defaultWorkspace).then((s) => get().setHarness(s)).catch(() => {});
+      }
     } catch (error) {
       log.error("bootstrap failed", error);
       set({ ready: true, errorBanner: String(error) });
@@ -253,7 +319,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   async openWorkspace(path) {
     const { host, workspacePath, harness } = get();
-    // Refresh key status — never yank the user to Settings on folder click.
     let hasKey = get().hasApiKey;
     try {
       const [hostKey, modelSnapshot] = await Promise.all([
@@ -271,14 +336,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
       /* keep cached flag */
     }
     if (!hasKey) {
-      set({ errorBanner: "need-key" });
+      set({ activeScene: "settings", errorBanner: "need-key" });
       return;
     }
     try {
       const selected = path ?? (await host.pickWorkspaceDirectory("选择工作区"));
       if (!selected) return;
 
-      // Same workspace already ready — just show session without respawn.
       if (
         selected === workspacePath &&
         harness.state === "ready" &&
@@ -318,7 +382,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   async restartHarness() {
     const path = get().workspacePath;
     if (!path) return;
-    // Force restart by clearing reuse path.
     set({
       harness: { ...IDLE_HARNESS, state: "starting", workspace: path },
       sessionMounted: true,
@@ -365,7 +428,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       recentWorkspaces: settings.recentWorkspaces,
     });
   },
-
 
   async saveApiKey(key) {
     await get().saveProviderApiKey("deepseek", key);
@@ -450,7 +512,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
         pluginBundles: snapshot.bundles,
         mcpServers: snapshot.mcpServers,
         pluginProfilePath: snapshot.profilePath,
-        dshHome: snapshot.dshHome || get().dshHome,
       });
     } catch (error) {
       log.error("plugins failed", error);
@@ -464,7 +525,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       pluginBundles: snapshot.bundles,
       mcpServers: snapshot.mcpServers,
       pluginProfilePath: snapshot.profilePath,
-      dshHome: snapshot.dshHome || get().dshHome,
     });
   },
 
@@ -475,7 +535,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       pluginBundles: snapshot.bundles,
       mcpServers: snapshot.mcpServers,
       pluginProfilePath: snapshot.profilePath,
-      dshHome: snapshot.dshHome || get().dshHome,
     });
   },
 
@@ -486,7 +545,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       pluginBundles: snapshot.bundles,
       mcpServers: snapshot.mcpServers,
       pluginProfilePath: snapshot.profilePath,
-      dshHome: snapshot.dshHome || get().dshHome,
     });
   },
 
@@ -497,7 +555,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
       pluginBundles: snapshot.bundles,
       mcpServers: snapshot.mcpServers,
       pluginProfilePath: snapshot.profilePath,
-      dshHome: snapshot.dshHome || get().dshHome,
     });
   },
 
@@ -549,6 +606,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
       workspacePath: status.workspace ?? get().workspacePath,
       sessionMounted: status.state === "ready" || get().sessionMounted,
     });
+    if (status.state === "ready" && status.url) {
+      const client = getGatewayClient(status.url);
+      if (client) {
+        void client.listSessions().then((res) => {
+          const items = res.items || [];
+          set({ sessions: items });
+          if (!get().activeSessionId && items.length > 0) {
+            void get().selectSession(items[0].sessionId);
+          }
+        }).catch(() => {});
+      }
+    }
   },
 
   setAgent(status) {
@@ -567,5 +636,225 @@ export const useAppStore = create<AppStore>((set, get) => ({
   clearBanner() {
     set({ errorBanner: null });
   },
-}));
 
+  // Session actions implementation
+  setSessions(sessions) {
+    set({ sessions });
+  },
+
+  setActiveSessionId(id) {
+    set({ activeSessionId: id });
+  },
+
+  setMessages(messages) {
+    set((state) => ({
+      messages: typeof messages === "function" ? messages(state.messages) : messages,
+    }));
+  },
+
+  setIsStreaming(streaming) {
+    set({ isStreaming: streaming });
+  },
+
+  setPendingQuestions(questions, rpcId = null) {
+    set({ pendingQuestions: questions, pendingQuestionRpcId: rpcId });
+  },
+
+  setPendingApproval(approval) {
+    set({ pendingApproval: approval });
+  },
+
+  async createSession(workspacePath) {
+    const ws = workspacePath ?? get().workspacePath;
+    const harness = get().harness;
+    if (!ws) {
+      await get().openWorkspace();
+      return null;
+    }
+    if (harness.state === "ready" && harness.url) {
+      const client = getGatewayClient(harness.url);
+      if (client) {
+        try {
+          const created = await client.createSession(ws, get().activePreset);
+          const list = await client.listSessions();
+          set({
+            sessions: list.items || [],
+            activeSessionId: created.sessionId,
+            messages: [],
+            activeScene: "session",
+          });
+          return created.sessionId;
+        } catch (e) {
+          log.error("Create session failed", e);
+        }
+      }
+    } else {
+      // Auto-start harness if not ready
+      await get().openWorkspace(ws);
+    }
+    return null;
+  },
+
+  async selectSession(sessionId) {
+    set({ activeSessionId: sessionId, activeScene: "session", messages: [] });
+    const harness = get().harness;
+    if (harness.state === "ready" && harness.url) {
+      const client = getGatewayClient(harness.url);
+      if (client) {
+        try {
+          const history: any = await client.getSessionHistory(sessionId);
+          if (history && Array.isArray(history.events)) {
+            const parsed = parseHistoryEvents(history.events);
+            set({ messages: parsed });
+          }
+        } catch (e) {
+          log.error("Failed to load session history", e);
+        }
+      }
+    }
+  },
+
+  async renameSession(sessionId, newTitle) {
+    const harness = get().harness;
+    if (harness.state === "ready" && harness.url) {
+      const client = getGatewayClient(harness.url);
+      if (client) {
+        try {
+          await client.renameSession(sessionId, newTitle);
+          const list = await client.listSessions();
+          set({ sessions: list.items || [] });
+        } catch (e) {
+          log.error("Rename session failed", e);
+        }
+      }
+    }
+  },
+
+  async archiveSession(sessionId) {
+    const harness = get().harness;
+    if (harness.state === "ready" && harness.url) {
+      const client = getGatewayClient(harness.url);
+      if (client) {
+        try {
+          await client.archiveSession(sessionId);
+          const list = await client.listSessions();
+          const items = list.items || [];
+          const current = get().activeSessionId;
+          const nextActive = current === sessionId ? (items[0]?.sessionId || null) : current;
+          set({ sessions: items, activeSessionId: nextActive });
+          if (nextActive && nextActive !== sessionId) {
+            void get().selectSession(nextActive);
+          } else if (!nextActive) {
+            set({ messages: [] });
+          }
+        } catch (e) {
+          log.error("Archive session failed", e);
+        }
+      }
+    }
+  },
+
+  async sendPrompt(text) {
+    const { activeSessionId, harness, workspacePath, activePreset } = get();
+    let client: any = null;
+    let sessId = activeSessionId;
+
+    if (harness.state === "ready" && harness.url) {
+      client = getGatewayClient(harness.url);
+    }
+
+    if (!client) {
+      if (workspacePath) {
+        await get().openWorkspace(workspacePath);
+      }
+      return;
+    }
+
+    if (!sessId) {
+      const created = await client.createSession(workspacePath || ".", activePreset);
+      sessId = created.sessionId;
+      const list = await client.listSessions();
+      set({ sessions: list.items || [], activeSessionId: sessId });
+    }
+
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: text,
+      createdAt: Date.now(),
+    };
+
+    const assistantMsg: ChatMessage = {
+      id: `asst-${Date.now()}`,
+      role: "assistant",
+      content: "",
+      createdAt: Date.now() + 1,
+      isStreaming: true,
+    };
+
+    set((state) => ({
+      messages: [...state.messages, userMsg, assistantMsg],
+      isStreaming: true,
+    }));
+
+    try {
+      await client.sendPrompt(sessId, text);
+    } catch (e) {
+      log.error("Send prompt failed", e);
+      set((state) => ({
+        isStreaming: false,
+        messages: state.messages.map((m, idx) =>
+          idx === state.messages.length - 1
+            ? { ...m, isStreaming: false, error: String(e) }
+            : m,
+        ),
+      }));
+    }
+  },
+
+  async cancelGeneration() {
+    const { activeSessionId, harness } = get();
+    if (!activeSessionId || harness.state !== "ready" || !harness.url) return;
+    const client = getGatewayClient(harness.url);
+    if (client) {
+      try {
+        await client.cancelSession(activeSessionId);
+        set({ isStreaming: false });
+      } catch (e) {
+        log.error("Cancel generation failed", e);
+      }
+    }
+  },
+
+  async respondToQuestion(answers) {
+    const { activeSessionId, pendingQuestionRpcId, harness } = get();
+    if (!activeSessionId || harness.state !== "ready" || !harness.url) return;
+    const client = getGatewayClient(harness.url);
+    if (client) {
+      try {
+        await client.respondToQuestion(
+          pendingQuestionRpcId || `resp-${Date.now()}`,
+          activeSessionId,
+          answers,
+        );
+        set({ pendingQuestions: null, pendingQuestionRpcId: null });
+      } catch (e) {
+        log.error("Respond question failed", e);
+      }
+    }
+  },
+
+  async resolveApproval(approvalId, outcome) {
+    const { harness } = get();
+    if (harness.state !== "ready" || !harness.url) return;
+    const client = getGatewayClient(harness.url);
+    if (client) {
+      try {
+        await client.resolveApproval(approvalId, outcome);
+        set({ pendingApproval: null });
+      } catch (e) {
+        log.error("Resolve approval failed", e);
+      }
+    }
+  },
+}));

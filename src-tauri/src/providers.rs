@@ -204,12 +204,12 @@ fn credential_present(credentials: &BTreeMap<String, String>, env_name: &str) ->
 fn default_model_from_settings(settings: &BTreeMap<String, Value>) -> DefaultModel {
     if let Some(Value::Mapping(map)) = mapping_get(settings, "agent-default-model") {
         let provider = string_field(map, "provider").unwrap_or_else(|| "deepseek-official".into());
-        let model = string_field(map, "model").unwrap_or_else(|| "deepseek-v4-flash".into());
+        let model = string_field(map, "model").unwrap_or_else(|| "deepseek-chat".into());
         return DefaultModel { provider, model };
     }
     DefaultModel {
         provider: "deepseek-official".into(),
-        model: "deepseek-v4-flash".into(),
+        model: "deepseek-chat".into(),
     }
 }
 
@@ -486,7 +486,7 @@ pub fn delete_provider(
                     );
                     map.insert(
                         Value::String("model".into()),
-                        Value::String("deepseek-v4-flash".into()),
+                        Value::String("deepseek-chat".into()),
                     );
                     map
                 }),

@@ -6,8 +6,17 @@ import { useAppStore } from "./stores/appStore";
 
 const MIN_SPLASH_MS = 650;
 
+function getSystemPreference(): "dark" | "light" {
+  if (typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+    return "dark";
+  }
+  return "light";
+}
+
 function applyTheme(theme: string) {
-  document.documentElement.dataset.theme = theme;
+  const resolved = theme === "system" ? getSystemPreference() : theme;
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themeSetting = theme;
 }
 
 export default function App() {
@@ -27,7 +36,7 @@ export default function App() {
   useEffect(() => {
     applyTheme(theme);
     if (theme !== "system" || typeof window.matchMedia !== "function") return;
-    const media = window.matchMedia("(prefers-color-scheme: light)");
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
     const sync = () => applyTheme("system");
     media.addEventListener("change", sync);
     return () => media.removeEventListener("change", sync);

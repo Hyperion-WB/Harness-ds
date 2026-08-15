@@ -148,12 +148,12 @@ export function CommandPalette() {
       },
       {
         id: "act-theme",
-        title: theme === "dark" ? "Switch to Light Theme" : "Switch to Dark Theme",
+        title: theme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme",
         subtitle: "Toggle appearance theme",
         category: "actions",
-        icon: theme === "dark" ? Sun : Moon,
+        icon: theme === "light" ? Moon : Sun,
         action: () => {
-          void applySettings({ theme: theme === "dark" ? "light" : "dark" });
+          void applySettings({ theme: theme === "light" ? "dark" : "light" });
           setOpen(false);
         },
       },

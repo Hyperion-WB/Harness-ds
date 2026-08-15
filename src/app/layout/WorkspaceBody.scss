@@ -30,47 +30,11 @@
   }
 
   &__body {
-
     display: flex;
     flex: 1;
     min-height: 0;
     min-width: 0;
     overflow: hidden;
-  }
-
-  &__nav {
-    display: flex;
-    flex-direction: column;
-    width: var(--dshg-nav);
-    flex-shrink: 0;
-    min-width: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-    background: var(--dshg-glass);
-    border-right: 1px solid var(--dshg-glass-border);
-    backdrop-filter: blur(var(--dshg-blur)) saturate(1.4);
-    -webkit-backdrop-filter: blur(var(--dshg-blur)) saturate(1.4);
-    box-shadow: inset -1px 0 0 var(--dshg-glass-highlight);
-    transition:
-      width 560ms var(--dshg-ease-spring),
-      background var(--dshg-motion) var(--dshg-ease-spring),
-      border-color var(--dshg-motion) var(--dshg-ease-spring);
-    will-change: width;
-
-    &::-webkit-scrollbar {
-      width: 0;
-      height: 0;
-      display: none;
-    }
-  }
-
-  &.is-collapsed &__nav {
-    width: var(--dshg-nav-collapsed);
-    overflow: hidden;
-    display: flex;
-    justify-content: center;
   }
 
   &__scene {
@@ -118,8 +82,8 @@
 @keyframes dshg-pane-in {
   from {
     opacity: 0;
-    filter: blur(4px);
-    transform: translateY(10px) scale(0.985);
+    filter: blur(6px);
+    transform: translateY(12px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -138,11 +102,14 @@
 }
 
 @keyframes dshg-orb-drift {
-  from {
-    transform: translate3d(0, 0, 0) scale(1);
+  0% {
+    transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
   }
-  to {
-    transform: translate3d(2.5%, -1.5%, 0) scale(1.04);
+  50% {
+    transform: translate3d(3%, -2.5%, 0) scale(1.08) rotate(2deg);
+  }
+  100% {
+    transform: translate3d(-2%, 2%, 0) scale(1.04) rotate(-1deg);
   }
 }
 
@@ -154,25 +121,5 @@
   .dshg-workspace__pane,
   .dshg-workspace__lazy {
     animation: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .dshg-workspace:not(.is-collapsed) {
-    --dshg-nav: 200px;
-  }
-}
-
-@media (max-width: 640px) {
-  .dshg-workspace:not(.is-collapsed) .dshg-workspace__nav {
-    position: absolute;
-    inset: var(--dshg-chrome) auto 0 0;
-    z-index: 15;
-    width: min(280px, 82vw);
-    box-shadow: var(--dshg-shadow-soft);
-  }
-
-  .dshg-workspace:not(.is-collapsed) .dshg-workspace__scene {
-    width: 100%;
   }
 }

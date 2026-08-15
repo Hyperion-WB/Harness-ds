@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { ChromeBar } from "../components/ChromeBar/ChromeBar";
-import { NavPanel } from "../components/NavPanel/NavPanel";
-import { WelcomeScene } from "../scenes/welcome/WelcomeScene";
+import { AppSidebar } from "../components/Sidebar/AppSidebar";
 import { SessionScene } from "../scenes/session/SessionScene";
 import { LiveLogsDrawer } from "../components/LiveLogsDrawer/LiveLogsDrawer";
 import { CommandPalette } from "../components/CommandPalette/CommandPalette";
@@ -18,7 +17,6 @@ const NARROW_NAV_MQ = "(max-width: 760px)";
 export function WorkspaceBody() {
   const collapsed = useAppStore((s) => s.navCollapsed);
   const scene = useAppStore((s) => s.activeScene);
-  const sessionMounted = useAppStore((s) => s.sessionMounted);
   const settingsVisited = useRef(false);
   if (scene === "settings") settingsVisited.current = true;
 
@@ -39,28 +37,16 @@ export function WorkspaceBody() {
     <div className={`dshg-workspace ${collapsed ? "is-collapsed" : ""}`}>
       <ChromeBar />
       <div className="dshg-workspace__body">
-        <aside className="dshg-workspace__nav">
-          <NavPanel collapsed={collapsed} />
-        </aside>
-        <div className="dshg-workspace__scene">
+        <AppSidebar />
+        <main className="dshg-workspace__scene">
           <div className="dshg-workspace__viewport">
             <div
-              className={`dshg-workspace__pane ${scene === "welcome" ? "is-visible" : ""}`}
-              hidden={scene !== "welcome"}
-              aria-hidden={scene !== "welcome"}
+              className={`dshg-workspace__pane dshg-workspace__pane--session ${scene === "session" || scene === "welcome" ? "is-visible" : ""}`}
+              hidden={scene === "settings"}
+              aria-hidden={scene === "settings"}
+              data-active={scene !== "settings" ? "true" : "false"}
             >
-              {scene === "welcome" && <WelcomeScene />}
-            </div>
-
-            <div
-              className={`dshg-workspace__pane dshg-workspace__pane--session ${scene === "session" ? "is-visible" : ""}`}
-              hidden={scene !== "session"}
-              aria-hidden={scene !== "session"}
-              data-active={scene === "session" ? "true" : "false"}
-            >
-              {(sessionMounted || scene === "session") && (
-                <SessionScene active={scene === "session"} />
-              )}
+              <SessionScene active={scene !== "settings"} />
             </div>
 
             <div
@@ -75,12 +61,10 @@ export function WorkspaceBody() {
               )}
             </div>
           </div>
-        </div>
+        </main>
       </div>
       <LiveLogsDrawer />
       <CommandPalette />
     </div>
   );
 }
-
-

@@ -4,6 +4,7 @@ import {
   Cpu,
   HardDrive,
   Layers,
+  LogIn,
   Palette,
   Puzzle,
   Sparkles,
@@ -39,6 +40,7 @@ export function SettingsScene() {
   const host = useAppStore((s) => s.host);
   const setScene = useAppStore((s) => s.setScene);
   const openWorkspace = useAppStore((s) => s.openWorkspace);
+  const workspacePath = useAppStore((s) => s.workspacePath);
   const harness = useAppStore((s) => s.harness);
   const needKey = useAppStore((s) => s.errorBanner === "need-key");
   const dshHome = useAppStore((s) => s.dshHome);
@@ -69,23 +71,30 @@ export function SettingsScene() {
     <div className="dshg-settings">
       <div className="dshg-settings__stack">
         <header className="dshg-settings__hero">
-          <h1>{t("settings.title")}</h1>
-          <p className="dshg-settings__hint">{t("settings.shortcutHint")}</p>
+          <div className="dshg-settings__hero-copy">
+            <h1>{t("settings.title")}</h1>
+            <p className="dshg-settings__hint">{t("settings.shortcutHint")}</p>
+          </div>
           {needKey && <p className="dshg-settings__warn">{t("welcome.needKey")}</p>}
           <div className="dshg-settings__callout">
             <p>{t("settings.sessionHint")}</p>
             <Button
               variant="primary"
               onClick={() => {
-                if (harness.state === "ready") setScene("session");
-                else void openWorkspace();
+                if (harness.state === "ready") {
+                  setScene("session");
+                } else if (workspacePath) {
+                  void openWorkspace(workspacePath);
+                } else {
+                  setScene("welcome");
+                }
               }}
             >
+              <LogIn size={14} />
               {t("settings.openSession")}
             </Button>
           </div>
 
-          {/* Apple Category Filter Tabs */}
           <div
             ref={tabTrackRef}
             className="dshg-settings__category-tabs"
@@ -97,7 +106,6 @@ export function SettingsScene() {
               style={{
                 transform: `translate3d(${tabPill.left}px, 0, 0)`,
                 width: `${tabPill.width}px`,
-                height: `${tabPill.height}px`,
               }}
             />
             {[

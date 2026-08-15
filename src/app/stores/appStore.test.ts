@@ -3,8 +3,8 @@ import { IDLE_HARNESS } from "@/shared/types";
 import { useAppStore } from "./appStore";
 
 describe("app store scene switching", () => {
-  it("defaults to the welcome scene", () => {
-    expect(useAppStore.getState().activeScene).toBe("welcome");
+  it("defaults to the session scene", () => {
+    expect(useAppStore.getState().activeScene).toBe("session");
     expect(useAppStore.getState().harness).toEqual(IDLE_HARNESS);
   });
 

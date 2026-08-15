@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, Plus, Trash2, X } from "lucide-react";
+import { Check, Plus, RotateCw, Trash2, X } from "lucide-react";
 import { Button, Select } from "@/component-library";
 import { useI18n } from "@/infrastructure/i18n";
 import { useAppStore } from "@/app/stores/appStore";
@@ -27,7 +27,7 @@ interface FormState {
   useCatalogModels: boolean;
 }
 
-function emptyForm(vendor: ProviderVendor = "anthropic"): FormState {
+function emptyForm(vendor: ProviderVendor = "deepseek-official"): FormState {
   const preset = presetForVendor(vendor);
   return {
     vendor,
@@ -85,6 +85,8 @@ export function ModelsSection() {
   const [error, setError] = useState<string | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [fetchingModels, setFetchingModels] = useState(false);
+  const [fetchFeedback, setFetchFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     void refreshModelProviders();
@@ -121,6 +123,110 @@ export function ModelsSection() {
       setTestResult({ success: false, message: `${t("models.testFailed")}: ${String(err)} (${elapsed}ms)` });
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function handleFetchModelsFromApi() {
+    const rawUrl = form.baseUrl.trim() || preset.baseURL;
+    if (!rawUrl) {
+      setFetchFeedback({ success: false, message: "请先填写 Base URL" });
+      return;
+    }
+    const cleanUrl = rawUrl.replace(/\/+$/, "");
+    setFetchingModels(true);
+    setFetchFeedback(null);
+
+    try {
+      let endpoint = cleanUrl;
+      if (cleanUrl.includes("ollama")) {
+        endpoint = cleanUrl.endsWith("/v1") ? `${cleanUrl}/models` : `${cleanUrl}/api/tags`;
+      } else if (cleanUrl.endsWith("/models")) {
+        endpoint = cleanUrl;
+      } else if (cleanUrl.endsWith("/v1")) {
+        endpoint = `${cleanUrl}/models`;
+      } else {
+        endpoint = `${cleanUrl}/v1/models`;
+      }
+
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+      };
+      if (form.apiKey.trim()) {
+        headers["Authorization"] = `Bearer ${form.apiKey.trim()}`;
+        if (cleanUrl.includes("anthropic")) {
+          headers["x-api-key"] = form.apiKey.trim();
+          headers["anthropic-version"] = "2023-06-01";
+        }
+      }
+
+      let res = await fetch(endpoint, { method: "GET", headers }).catch(() => null);
+      if (!res || !res.ok) {
+        const altEndpoint = endpoint.endsWith("/v1/models")
+          ? `${cleanUrl}/models`
+          : `${cleanUrl}/v1/models`;
+        if (altEndpoint !== endpoint) {
+          const altRes = await fetch(altEndpoint, { method: "GET", headers }).catch(() => null);
+          if (altRes && altRes.ok) res = altRes;
+        }
+      }
+
+      if (!res) {
+        throw new Error("无法连接至该接口，请检查 Base URL 与网络连接");
+      }
+      if (res.status === 401 || res.status === 403) {
+        throw new Error("API 密钥无效或未授权 (401/403 Unauthorized)");
+      }
+      if (!res.ok) {
+        throw new Error(`接口请求返回异常: HTTP ${res.status} ${res.statusText}`);
+      }
+
+      const json = await res.json();
+      let fetchedModelIds: string[] = [];
+
+      if (Array.isArray(json?.data)) {
+        fetchedModelIds = json.data
+          .map((item: any) => (typeof item === "string" ? item : item?.id))
+          .filter((id: any): id is string => typeof id === "string" && Boolean(id.trim()));
+      } else if (Array.isArray(json?.models)) {
+        fetchedModelIds = json.models
+          .map((item: any) => item?.name || item?.id)
+          .filter((id: any): id is string => typeof id === "string" && Boolean(id.trim()));
+      } else if (Array.isArray(json)) {
+        fetchedModelIds = json
+          .map((item: any) => (typeof item === "string" ? item : item?.id || item?.name))
+          .filter((id: any): id is string => typeof id === "string" && Boolean(id.trim()));
+      }
+
+      if (fetchedModelIds.length === 0) {
+        throw new Error("接口返回成功但未能解析出模型列表");
+      }
+
+      // Sort models: prioritize chat/reasoner models
+      fetchedModelIds.sort((a, b) => {
+        const aChat = a.toLowerCase().includes("chat") || a.toLowerCase().includes("v3") || a.toLowerCase().includes("r1");
+        const bChat = b.toLowerCase().includes("chat") || b.toLowerCase().includes("v3") || b.toLowerCase().includes("r1");
+        if (aChat && !bChat) return -1;
+        if (!aChat && bChat) return 1;
+        return a.localeCompare(b);
+      });
+
+      setForm((current) => ({
+        ...current,
+        useCatalogModels: false,
+        models: fetchedModelIds,
+      }));
+
+      setFetchFeedback({
+        success: true,
+        message: `成功从 API 接口获取到 ${fetchedModelIds.length} 个最新可用模型`,
+      });
+    } catch (err) {
+      setFetchFeedback({
+        success: false,
+        message: `获取失败: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    } finally {
+      setFetchingModels(false);
     }
   }
 
@@ -369,24 +475,43 @@ export function ModelsSection() {
 
           <div className="dshg-models__models-head">
             <label>{t("models.modelList")}</label>
-            {preset.kind === "catalog" && (
+            <div className="dshg-models__models-actions">
               <button
                 type="button"
-                className={`dshg-models__link ${form.useCatalogModels ? "is-active" : ""}`}
-                onClick={() =>
-                  setForm((current) => ({
-                    ...current,
-                    useCatalogModels: !current.useCatalogModels,
-                    models: !current.useCatalogModels
-                      ? []
-                      : preset.models.map((item) => item.id),
-                  }))
-                }
+                className="dshg-models__fetch-btn"
+                onClick={() => void handleFetchModelsFromApi()}
+                disabled={fetchingModels}
+                title="向当前配置的 Base URL 发起请求，自动拉取 API 实际支持的最新模型列表"
               >
-                {t("models.useCatalog")}
+                <RotateCw size={12} className={fetchingModels ? "is-spinning" : ""} />
+                <span>{fetchingModels ? "正在请求接口..." : "从接口获取可用模型"}</span>
               </button>
-            )}
+
+              {preset.kind === "catalog" && (
+                <button
+                  type="button"
+                  className={`dshg-models__link ${form.useCatalogModels ? "is-active" : ""}`}
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      useCatalogModels: !current.useCatalogModels,
+                      models: !current.useCatalogModels
+                        ? []
+                        : preset.models.map((item) => item.id),
+                    }))
+                  }
+                >
+                  {t("models.useCatalog")}
+                </button>
+              )}
+            </div>
           </div>
+
+          {fetchFeedback && (
+            <p className={`dshg-models__test-feedback ${fetchFeedback.success ? "is-success" : "is-error"}`}>
+              {fetchFeedback.message}
+            </p>
+          )}
 
           {!form.useCatalogModels && (
             <>

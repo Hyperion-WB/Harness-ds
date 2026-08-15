@@ -464,7 +464,6 @@ pub async fn open_in_editor(path: String, editor: Option<String>) -> Result<(), 
     command.arg(&path).env("PATH", &path_var);
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         command.creation_flags(CREATE_NO_WINDOW);
     }

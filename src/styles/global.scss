@@ -30,6 +30,11 @@ textarea {
 
 button {
   cursor: pointer;
+  transition: transform 120ms ease, box-shadow 150ms ease;
+
+  &:active:not(:disabled) {
+    box-shadow: 0 0 14px var(--dshg-accent-glow, rgba(56, 189, 248, 0.4));
+  }
 }
 
 :focus-visible {
@@ -41,15 +46,15 @@ button {
   background: var(--dshg-accent-soft);
 }
 
-/* Thin themed scrollbars */
+/* Ultra-thin themed sleek scrollbars */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--dshg-border-base) transparent;
 }
 
 *::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 *::-webkit-scrollbar-track {
@@ -59,14 +64,11 @@ button {
 *::-webkit-scrollbar-thumb {
   background: var(--dshg-border-base);
   border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  transition: background 150ms ease;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--dshg-text-muted);
-  background-clip: content-box;
-  border: 2px solid transparent;
+  background: var(--dshg-accent-strong);
 }
 
 *::-webkit-scrollbar-corner {

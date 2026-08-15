@@ -335,14 +335,21 @@ export function PluginsSection() {
   }
 
   const filteredHubPlugins = hubPlugins.filter((plugin: CuratedPlugin) => {
-    if (hubCategory !== "all" && plugin.category !== hubCategory) {
-      return false;
+    if (hubCategory === "featured") {
+      if (!plugin.featured && (!plugin.stars || plugin.stars < 400)) return false;
+    } else if (hubCategory === "official") {
+      if (!plugin.isOfficial && plugin.compatibility !== "official") return false;
+    } else if (hubCategory !== "all") {
+      if (plugin.category !== hubCategory) return false;
     }
+
     if (hubSearch.trim()) {
       const q = hubSearch.toLowerCase();
       return (
         plugin.name.toLowerCase().includes(q) ||
         plugin.packageName.toLowerCase().includes(q) ||
+        (plugin.description.zh && plugin.description.zh.toLowerCase().includes(q)) ||
+        (plugin.description.en && plugin.description.en.toLowerCase().includes(q)) ||
         plugin.tags.some((t: string) => t.toLowerCase().includes(q))
       );
     }
@@ -350,7 +357,8 @@ export function PluginsSection() {
   });
 
   const availableUpdateCount = Object.values(pluginUpdates).filter((u: PluginUpdateInfo) => u.hasUpdate).length;
-
+  const officialCount = hubPlugins.filter((p) => p.isOfficial || p.compatibility === "official").length;
+  const compatibleCount = hubPlugins.filter((p) => p.compatibility === "compatible").length;
 
   return (
     <section className="dshg-plugins">
@@ -380,7 +388,6 @@ export function PluginsSection() {
       </div>
 
       {feedback && <div className="dshg-plugins__feedback">{feedback}</div>}
-
 
       {/* Curated Plugin Hub (精选插件市场 + 兼容性雷达) */}
       <div className="dshg-plugins__hub-card">
@@ -426,6 +433,25 @@ export function PluginsSection() {
           </div>
         </div>
 
+        {/* Quick Radar Compatibility Overview Bar */}
+        <div className="dshg-plugins__radar-bar">
+          <div className="dshg-plugins__radar-stat">
+            <span className="dshg-plugins__radar-dot is-official" />
+            <span className="dshg-plugins__radar-label">官方认证</span>
+            <span className="dshg-plugins__radar-val">{officialCount}</span>
+          </div>
+          <div className="dshg-plugins__radar-stat">
+            <span className="dshg-plugins__radar-dot is-compatible" />
+            <span className="dshg-plugins__radar-label">稳定可用</span>
+            <span className="dshg-plugins__radar-val">{compatibleCount}</span>
+          </div>
+          <div className="dshg-plugins__radar-stat">
+            <span className="dshg-plugins__radar-dot is-watch" />
+            <span className="dshg-plugins__radar-label">总计收录</span>
+            <span className="dshg-plugins__radar-val">{hubPlugins.length}+</span>
+          </div>
+        </div>
+
         {/* Update Notification Banner */}
         {availableUpdateCount > 0 && (
           <div className="dshg-plugins__update-banner">
@@ -449,10 +475,13 @@ export function PluginsSection() {
           <div className="dshg-plugins__hub-chips">
             {[
               { id: "all" as const, label: t("plugins.cat.all"), icon: Layers },
-              { id: "official" as const, label: t("plugins.cat.official"), icon: Sparkles },
+              { id: "featured" as const, label: t("plugins.cat.featured"), icon: Sparkles },
+              { id: "official" as const, label: t("plugins.cat.official"), icon: Check },
               { id: "ui" as const, label: t("plugins.cat.ui"), icon: Layout },
               { id: "agent" as const, label: t("plugins.cat.agent"), icon: Bot },
+              { id: "memory" as const, label: t("plugins.cat.memory"), icon: FolderSync },
               { id: "dev" as const, label: t("plugins.cat.dev"), icon: Code },
+              { id: "vision" as const, label: t("plugins.cat.vision"), icon: Sparkles },
               { id: "mcp" as const, label: t("plugins.cat.mcp"), icon: FolderSync },
             ].map((cat) => {
               const Icon = cat.icon;
@@ -475,7 +504,7 @@ export function PluginsSection() {
             <Search size={12} />
             <input
               value={hubSearch}
-              placeholder="搜索插件、标签或包名..."
+              placeholder="搜索插件、标签或简介..."
               onChange={(e) => setHubSearch(e.target.value)}
             />
             {hubSearch && (
@@ -490,119 +519,140 @@ export function PluginsSection() {
           </div>
         </div>
 
-        <div className="dshg-plugins__hub-grid">
-          {filteredHubPlugins.map((plugin, idx) => {
-            const clean = plugin.packageName.replace(/^npm:/, "").trim();
-            const repoName = clean.includes("/") ? clean.split("/").at(-1)! : clean;
-            const installedPkg = packages.find((p) => {
-              if (p.name === plugin.packageName || p.name === clean) return true;
-              if (p.name === repoName) return true;
-              if (clean.startsWith("github:") && p.name.includes(repoName)) return true;
-              return false;
-            });
-            const isInstalled = Boolean(installedPkg);
-            const updateInfo = installedPkg ? pluginUpdates[installedPkg.name] : undefined;
-            const hasUpdate = Boolean(updateInfo?.hasUpdate);
-            const isInstalling = installingPkg === plugin.packageName;
+        {/* Smooth Scrollable Plugin Hub Grid */}
+        <div className="dshg-plugins__hub-scroll-wrapper">
+          {filteredHubPlugins.length === 0 ? (
+            <div className="dshg-plugins__hub-empty">
+              <p>未找到符合条件的插件</p>
+            </div>
+          ) : (
+            <div className="dshg-plugins__hub-grid">
+              {filteredHubPlugins.map((plugin, idx) => {
+                const clean = plugin.packageName.replace(/^npm:/, "").trim();
+                const repoName = clean.includes("/") ? clean.split("/").at(-1)! : clean;
+                const installedPkg = packages.find((p) => {
+                  if (p.name === plugin.packageName || p.name === clean) return true;
+                  if (p.name === repoName) return true;
+                  if (clean.startsWith("github:") && p.name.includes(repoName)) return true;
+                  return false;
+                });
+                const isInstalled = Boolean(installedPkg);
+                const updateInfo = installedPkg ? pluginUpdates[installedPkg.name] : undefined;
+                const hasUpdate = Boolean(updateInfo?.hasUpdate);
+                const isInstalling = installingPkg === plugin.packageName;
 
-            return (
-              <div
-                key={plugin.packageName}
-                className="dshg-plugins__hub-item"
-                style={{ animationDelay: `${Math.min(idx * 25, 300)}ms` }}
-              >
-                <div className="dshg-plugins__hub-item-head">
-                  <div className="dshg-plugins__hub-name-group">
-                    <span className="dshg-plugins__hub-name">{plugin.name}</span>
-                    {plugin.compatibility === "official" ? (
-                      <span
-                        className="dshg-plugins__compat-badge is-official"
-                        title="官方认证：由 DeepSeek 官方团队直接维护与支持"
-                      >
-                        官方认证
-                      </span>
-                    ) : plugin.compatibility === "compatible" ? (
-                      <span
-                        className="dshg-plugins__compat-badge is-compatible"
-                        title="稳定可用：经过社区兼容性雷达每日全量测试，无冲突"
-                      >
-                        稳定可用
-                      </span>
-                    ) : (
-                      <span
-                        className="dshg-plugins__compat-badge is-watch"
-                        title="社区测试：社区活跃贡献扩展，部分特性跟踪测试中"
-                      >
-                        社区测试
-                      </span>
-                    )}
-                  </div>
-                  <span className="dshg-plugins__hub-pkg">{plugin.packageName}</span>
-                </div>
+                return (
+                  <div
+                    key={plugin.packageName}
+                    className="dshg-plugins__hub-item"
+                    style={{ animationDelay: `${Math.min(idx * 20, 200)}ms` }}
+                  >
+                    <div className="dshg-plugins__hub-item-head">
+                      <div className="dshg-plugins__hub-name-group">
+                        <span className="dshg-plugins__hub-name">{plugin.name}</span>
+                        {plugin.compatibility === "official" ? (
+                          <span
+                            className="dshg-plugins__compat-badge is-official"
+                            title="官方认证：由 DeepSeek 官方团队直接维护与支持"
+                          >
+                            官方认证
+                          </span>
+                        ) : plugin.compatibility === "compatible" ? (
+                          <span
+                            className="dshg-plugins__compat-badge is-compatible"
+                            title="稳定可用：经过社区兼容性雷达每日全量测试，无冲突"
+                          >
+                            稳定可用
+                          </span>
+                        ) : (
+                          <span
+                            className="dshg-plugins__compat-badge is-watch"
+                            title="社区测试：社区活跃贡献扩展，部分特性跟踪测试中"
+                          >
+                            社区测试
+                          </span>
+                        )}
+                      </div>
+                      <span className="dshg-plugins__hub-pkg">{plugin.packageName}</span>
+                    </div>
 
-                <p className="dshg-plugins__hub-desc">
-                  {plugin.description[locale as "zh" | "en"] ?? plugin.description.zh}
-                </p>
+                    <p className="dshg-plugins__hub-desc">
+                      {plugin.description[locale as "zh" | "en"] ?? plugin.description.zh}
+                    </p>
 
-                <div className="dshg-plugins__hub-tags">
-                  {plugin.tags.map((tag: string) => (
-                    <span key={tag} className="dshg-plugins__hub-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                    <div className="dshg-plugins__hub-tags">
+                      {plugin.tags.map((tag: string) => (
+                        <span key={tag} className="dshg-plugins__hub-tag">
+                          {tag}
+                        </span>
+                      ))}
+                      {plugin.stars && (
+                        <span className="dshg-plugins__hub-tag is-stars">
+                          ⭐ {plugin.stars}
+                        </span>
+                      )}
+                    </div>
 
-
-                <div className="dshg-plugins__hub-footer">
-                  {plugin.repoUrl ? (
-                    <button
-                      type="button"
-                      className="dshg-plugins__repo-link"
-                      title="查看源码仓库"
-                      onClick={() => void openExternal(plugin.repoUrl!)}
-                    >
-                      GitHub
-                    </button>
-                  ) : (
-                    <span />
-                  )}
-
-                  <div className="dshg-plugins__hub-actions">
-                    {isInstalled ? (
-                      hasUpdate && updateInfo ? (
+                    <div className="dshg-plugins__hub-footer">
+                      {plugin.repoUrl ? (
                         <button
                           type="button"
-                          className="dshg-plugins__update-btn"
-                          disabled={isInstalling}
-                          onClick={() => void installPackage(plugin.packageName)}
-                          title={`新版本 v${updateInfo.latestVersion} 可用 (当前: v${updateInfo.installedVersion || "0.0.0"})`}
+                          className="dshg-plugins__repo-link"
+                          title="查看 GitHub 源码仓库"
+                          onClick={() => void openExternal(plugin.repoUrl!)}
                         >
-                          <ArrowUpCircle size={13} />
-                          <span>{isInstalling ? t("plugins.updating") : `${t("plugins.updateNow")} v${updateInfo.latestVersion}`}</span>
+                          GitHub
                         </button>
                       ) : (
-                        <span className="dshg-plugins__installed-tag">
-                          <Check size={12} />
-                          {t("plugins.installedBadge")}
-                        </span>
-                      )
-                    ) : (
+                        <span />
+                      )}
 
-                      <button
-                        type="button"
-                        className="dshg-plugins__install-btn"
-                        disabled={isInstalling}
-                        onClick={() => void installPackage(plugin.packageName)}
-                      >
-                        <Download size={13} />
-                        <span>{isInstalling ? t("plugins.installing") : t("plugins.add")}</span>
-                      </button>
-                    )}
+                      <div className="dshg-plugins__hub-actions">
+                        {isInstalled ? (
+                          <>
+                            <span className="dshg-plugins__installed-chip">
+                              <Check size={11} />
+                              <span>{t("plugins.installedBadge")}</span>
+                            </span>
+
+                            {hasUpdate ? (
+                              <Button
+                                variant="primary"
+                                disabled={isInstalling}
+                                onClick={() => void installPackage(plugin.packageName)}
+                                title={`升级至最新版本 v${updateInfo?.latestVersion}`}
+                              >
+                                {isInstalling ? t("plugins.updating") : t("plugins.updateNow")}
+                              </Button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="dshg-plugins__remove-icon-btn"
+                                disabled={busy}
+                                onClick={() => void removePlugin(clean)}
+                                title="卸载插件"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <Button
+                            variant="primary"
+                            disabled={isInstalling || busy}
+                            onClick={() => void installPackage(plugin.packageName)}
+                          >
+                            <Download size={12} />
+                            <span>{isInstalling ? t("plugins.installing") : t("plugins.add")}</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 

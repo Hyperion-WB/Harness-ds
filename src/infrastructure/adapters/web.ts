@@ -36,7 +36,7 @@ function readProviderKeys(): ProviderKeysStatus {
 function emptySnapshot(): ModelProvidersSnapshot {
   return {
     providers: [],
-    defaultModel: { provider: "deepseek-official", model: "deepseek-v4-flash" },
+    defaultModel: { provider: "deepseek-official", model: "deepseek-chat" },
     dshHome: "browser-preview",
   };
 }
