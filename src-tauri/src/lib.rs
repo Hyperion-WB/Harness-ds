@@ -144,6 +144,7 @@ pub fn run() {
             commands::doctor,
             commands::get_agent_status,
             commands::update_agent,
+            commands::repair_agent,
             commands::open_in_editor,
             commands::open_in_terminal,
             commands::reveal_in_file_manager,

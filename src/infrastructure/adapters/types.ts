@@ -40,6 +40,7 @@ export interface HostAdapter {
   doctor(): Promise<DoctorReport>;
   getAgentStatus(): Promise<AgentStatus>;
   updateAgent(): Promise<AgentStatus>;
+  repairAgent(): Promise<AgentStatus>;
   minimizeWindow(): Promise<void>;
   toggleMaximizeWindow(): Promise<void>;
   closeWindow(): Promise<void>;

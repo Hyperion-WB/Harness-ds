@@ -241,15 +241,19 @@ export function SessionScene({ active = true }: SessionSceneProps) {
 
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  async function handleDownloadCore() {
+  async function handleDownloadCore(forceClean = false) {
     setIsDownloading(true);
     setDownloadError(null);
     try {
-      await updateAgentNow();
+      if (forceClean) {
+        await useAppStore.getState().repairAgentNow();
+      } else {
+        await updateAgentNow();
+      }
       const updatedAgent = useAppStore.getState().agent;
       if (!updatedAgent.installedVersion) {
         const banner = useAppStore.getState().errorBanner;
-        setDownloadError(banner || "核心组件安装未返回版本号，请检查网络或 Node.js 环境");
+        setDownloadError(banner || "核心组件安装未完整完成，请检查网络后点击一键重装修复");
         return;
       }
       const ws = useAppStore.getState().workspacePath;
@@ -408,7 +412,10 @@ export function SessionScene({ active = true }: SessionSceneProps) {
                 </pre>
               )}
               <div className="dshg-session__error-actions">
-                <Button variant="primary" onClick={() => void restartHarness()}>
+                <Button variant="primary" onClick={() => void handleDownloadCore(true)}>
+                  一键重新安装并修复核心
+                </Button>
+                <Button onClick={() => void restartHarness()}>
                   重试启动
                 </Button>
                 <Button onClick={toggleLogsDrawer}>查看完整日志</Button>

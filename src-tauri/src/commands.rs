@@ -357,6 +357,21 @@ pub async fn update_agent(
 }
 
 #[tauri::command]
+pub async fn repair_agent(
+    app: AppHandle,
+    state: State<'_, AppState>,
+) -> Result<AgentStatus, String> {
+    let settings = lock_settings(&state)?.clone();
+    let _ = state.harness.stop(&app).await;
+    let status = agent::clean_and_reinstall_agent(&settings).await?;
+    let current = state.harness.snapshot().await;
+    if let Some(workspace) = current.workspace.clone() {
+        let _ = state.harness.start(&app, &settings, workspace).await;
+    }
+    Ok(status)
+}
+
+#[tauri::command]
 pub async fn doctor(state: State<'_, AppState>) -> Result<DoctorReport, String> {
     let settings = lock_settings(&state)?.clone();
     let path_var = augmented_path();

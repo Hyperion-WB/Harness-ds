@@ -258,6 +258,10 @@ export const webAdapter: HostAdapter = {
     return IDLE_AGENT;
   },
 
+  async repairAgent(): Promise<AgentStatus> {
+    return IDLE_AGENT;
+  },
+
   async minimizeWindow() {},
   async toggleMaximizeWindow() {},
   async closeWindow() {},

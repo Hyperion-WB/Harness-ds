@@ -32,9 +32,15 @@ pub use crate::paths::agent_prefix_dir;
 
 pub fn is_installation_complete(prefix: &Path) -> bool {
     let flag_file = prefix.join(".install_complete");
-    let has_web_app = prefix.join("node_modules").join("@deepseek-ai").join("dsh-web-app").is_dir();
-    let has_dsh = prefix.join("node_modules").join("@deepseek-ai").join("dsh").is_dir();
-    (flag_file.is_file() || has_web_app) && has_dsh
+    let nm = prefix.join("node_modules");
+    let has_dsh = nm.join("@deepseek-ai").join("dsh").is_dir();
+    let has_web_app = nm.join("@deepseek-ai").join("dsh-web-app").is_dir();
+    let has_sharp = nm.join("sharp").is_dir();
+    let has_fflate = nm.join("fflate").is_dir();
+    let has_eventsource = nm.join("eventsource-parser").is_dir();
+    let has_pi_ai = nm.join("@earendil-works").join("pi-ai").is_dir();
+
+    flag_file.is_file() && has_dsh && has_web_app && has_sharp && has_fflate && has_eventsource && has_pi_ai
 }
 
 pub fn local_dsh_js_entry(prefix: &Path) -> Option<PathBuf> {
@@ -235,20 +241,52 @@ pub async fn ensure_local_agent(settings: &AppSettings) -> Result<PathBuf, Strin
         .ok_or_else(|| "安装后仍找不到本地 dsh 可执行文件".to_string())
 }
 
+pub async fn clean_and_reinstall_agent(settings: &AppSettings) -> Result<AgentStatus, String> {
+    let prefix = agent_prefix_dir()?;
+    let nm = prefix.join("node_modules");
+    if nm.exists() {
+        let _ = fs::remove_dir_all(&nm);
+    }
+    let flag = prefix.join(".install_complete");
+    let _ = fs::remove_file(&flag);
+    let home = crate::paths::dsh_home_dir().unwrap_or_default();
+    let home_nm = home.join("node_modules");
+    if home_nm.exists() {
+        let _ = fs::remove_dir_all(&home_nm);
+    }
+    install_agent(settings).await
+}
+
 pub async fn agent_status(settings: &AppSettings) -> Result<AgentStatus, String> {
     let prefix = agent_prefix_dir()?;
-    let installed = read_installed_version(&prefix);
-    let binary = local_dsh_binary(&prefix);
-    let mut error = None;
+    let complete = is_installation_complete(&prefix);
+    let installed = if complete {
+        read_installed_version(&prefix)
+    } else {
+        None
+    };
+    let binary = if complete {
+        local_dsh_binary(&prefix).or_else(|| local_dsh_js_entry(&prefix))
+    } else {
+        None
+    };
+    let mut error = if !complete && prefix.join("node_modules").exists() {
+        Some("检测到核心依赖包不完整或损坏，请点击「重新下载核心」以完成完整安装。".to_string())
+    } else {
+        None
+    };
     let latest = match fetch_latest_version(&settings.agent_channel).await {
         Ok(version) => Some(version),
         Err(err) => {
-            error = Some(err);
+            if error.is_none() {
+                error = Some(err);
+            }
             None
         }
     };
     let update_available = match (&installed, &latest) {
         (Some(current), Some(remote)) => current != remote,
+        (None, Some(_)) => true,
         _ => false,
     };
     Ok(AgentStatus {

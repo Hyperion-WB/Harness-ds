@@ -37,6 +37,7 @@ export function SettingsScene() {
   const applySettings = useAppStore((s) => s.applySettings);
   const refreshAgentStatus = useAppStore((s) => s.refreshAgentStatus);
   const updateAgentNow = useAppStore((s) => s.updateAgentNow);
+  const repairAgentNow = useAppStore((s) => s.repairAgentNow);
   const host = useAppStore((s) => s.host);
   const setScene = useAppStore((s) => s.setScene);
   const openWorkspace = useAppStore((s) => s.openWorkspace);
@@ -217,6 +218,15 @@ export function SettingsScene() {
                   }}
                 >
                   {t("settings.updateAgent")}
+                </Button>
+                <Button
+                  disabled={busy}
+                  onClick={() => {
+                    setBusy(true);
+                    void repairAgentNow().finally(() => setBusy(false));
+                  }}
+                >
+                  一键重装/修复核心
                 </Button>
               </div>
               <Switch

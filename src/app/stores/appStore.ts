@@ -132,6 +132,7 @@ export interface AppStore {
   deleteMcpServer: (serverId: string) => Promise<void>;
   refreshAgentStatus: () => Promise<void>;
   updateAgentNow: () => Promise<void>;
+  repairAgentNow: () => Promise<void>;
   setHarness: (status: HarnessStatus) => void;
   setAgent: (status: AgentStatus) => void;
   appendLog: (line: string) => void;
@@ -571,6 +572,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ errorBanner: null });
     try {
       const agent = await get().host.updateAgent();
+      set({ agent });
+      const harness = await get().host.getHarnessStatus();
+      get().setHarness(harness);
+    } catch (error) {
+      const msg = String(error);
+      set({ errorBanner: msg });
+      throw error;
+    }
+  },
+
+  async repairAgentNow() {
+    set({ errorBanner: null });
+    try {
+      const agent = await get().host.repairAgent();
       set({ agent });
       const harness = await get().host.getHarnessStatus();
       get().setHarness(harness);

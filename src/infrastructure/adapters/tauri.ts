@@ -151,6 +151,10 @@ export const tauriAdapter: HostAdapter = {
     return invoke<AgentStatus>("update_agent");
   },
 
+  repairAgent() {
+    return invoke<AgentStatus>("repair_agent");
+  },
+
   async minimizeWindow() {
     await getCurrentWindow().minimize();
   },
