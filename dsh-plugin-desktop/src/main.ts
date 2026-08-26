@@ -42,6 +42,8 @@ import {
   formatWindowsVolumeConcern,
   type WindowsVolumeConcern,
 } from './windows-volume-diagnostics.ts'
+import { installDesktopNativeBridge } from './desktop-native-bridge.ts'
+import { resolveShellEnvironment } from './harness-process.ts'
 
 const BIN_NAME = 'dsh-plugin-desktop'
 const PRODUCT_NAME = 'DSH Desktop'
@@ -162,6 +164,7 @@ async function start(): Promise<void> {
 
   app.on('second-instance', () => { runtime.show() })
   await app.whenReady()
+  installDesktopNativeBridge()
   if (process.platform === 'win32') app.setAppUserModelId('ai.deepseek.dsh.desktop')
   if (app.isPackaged && process.cwd() === '/') process.chdir(app.getPath('home'))
   const homeDir = resolveDshHome()
@@ -188,6 +191,7 @@ async function start(): Promise<void> {
   })
 
   try {
+    const shellEnv = resolveShellEnvironment()
     const environment = loadLayeredEnv(BIN_NAME, process.cwd())
     const electronVersion = process.versions.electron
     if (electronVersion === undefined) {
@@ -200,7 +204,7 @@ async function start(): Promise<void> {
       pnpmBinPath,
       electronVersion,
       stateDir: join(app.getPath('userData'), 'runtime-commands'),
-      environment: process.env,
+      environment: { ...shellEnv, ...process.env },
     })
     const releasePnpmRuntime = (): void => { pnpmRuntime.dispose() }
     disposePnpmRuntime = releasePnpmRuntime

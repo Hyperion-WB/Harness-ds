@@ -35,6 +35,8 @@ import { prepareTrayIcon } from './tray-icons.ts'
 import { downloadDesktopUpdate } from './update-download.ts'
 import type { UpdateCheckResult } from './update-checker.ts'
 import { desktopWindowOptions } from './window-options.ts'
+import { waitForHarnessReady } from './harness-process.ts'
+import { secureHarnessWindow } from './desktop-native-bridge.ts'
 
 /** Return the presentation mode opposite the active generation. */
 export function nextDesktopShellMode(mode: DesktopShellSpec['mode']): DesktopShellSpec['mode'] {
@@ -530,9 +532,11 @@ export class ElectronDesktopRuntime implements DesktopRuntime {
       return { action: 'deny' }
     })
 
+    secureHarnessWindow(window)
     window.once('ready-to-show', show)
     let tray: Tray | undefined
     try {
+      await waitForHarnessReady(spec.url, 20_000)
       await window.loadURL(spec.url)
       tray = new Tray(prepareTrayIcon(spec.trayIcons, this.platform))
       this.tray = tray

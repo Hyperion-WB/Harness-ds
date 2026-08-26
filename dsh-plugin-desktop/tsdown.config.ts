@@ -24,6 +24,8 @@ export default defineConfig([
       updates: 'src/updates.ts',
       'windows-pwsh-sandbox': 'src/windows-pwsh-sandbox.ts',
       'windows-acl-runner': 'src/windows-acl-runner.ts',
+      'harness-process': 'src/harness-process.ts',
+      'desktop-native-bridge': 'src/desktop-native-bridge.ts',
       main: 'src/main.ts',
     },
     outDir: 'lib',
