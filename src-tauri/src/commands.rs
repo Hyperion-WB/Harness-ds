@@ -420,6 +420,7 @@ async fn probe_binary(name: &str, path_var: &str) -> Probe {
             error: Some(format!("PATH 上找不到 {name}")),
         },
         Some(path) => {
+            let display = path.display().to_string();
             let mut cmd = Command::new(&path);
             cmd.arg("--version")
                 .env("PATH", path_var)
