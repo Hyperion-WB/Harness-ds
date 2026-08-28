@@ -420,15 +420,17 @@ async fn probe_binary(name: &str, path_var: &str) -> Probe {
             error: Some(format!("PATH 上找不到 {name}")),
         },
         Some(path) => {
-            let display = path.display().to_string();
-            match Command::new(&path)
-                .arg("--version")
+            let mut cmd = Command::new(&path);
+            cmd.arg("--version")
                 .env("PATH", path_var)
                 .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
-                .await
+                .stderr(Stdio::piped());
+            #[cfg(windows)]
             {
+                const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+                cmd.creation_flags(CREATE_NO_WINDOW);
+            }
+            match cmd.output().await {
                 Ok(output) => {
                     let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                     let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();

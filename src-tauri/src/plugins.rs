@@ -286,6 +286,11 @@ async fn run_dsh_plugin(settings: &AppSettings, args: &[String]) -> Result<Strin
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
+    #[cfg(windows)]
+    {
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
     let output = command
         .output()
         .await

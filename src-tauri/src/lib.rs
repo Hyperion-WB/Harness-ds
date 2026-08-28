@@ -45,31 +45,15 @@ fn window_state_flags() -> StateFlags {
 fn schedule_agent_auto_update(app: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         // Initial delay so UI can bootstrap first.
-        tokio::time::sleep(Duration::from_secs(8)).await;
+        tokio::time::sleep(Duration::from_secs(15)).await;
         while let Some(state) = app.try_state::<AppState>() {
             let settings = match state.settings.lock() {
                 Ok(guard) => guard.clone(),
                 Err(_) => break,
             };
             if settings.agent_auto_update {
-                match agent::agent_status(&settings).await {
-                    Ok(status) if status.update_available => {
-                        let _ = app.emit("agent://update-available", &status);
-                        if let Ok(updated) = agent::install_agent(&settings).await {
-                            let _ = app.emit("agent://updated", &updated);
-                            let current = state.harness.snapshot().await;
-                            if let Some(workspace) = current.workspace {
-                                let _ = state.harness.stop(&app).await;
-                                let _ = state.harness.start(&app, &settings, workspace).await;
-                            }
-                        }
-                    }
-                    Ok(status) => {
-                        let _ = app.emit("agent://status", &status);
-                    }
-                    Err(error) => {
-                        eprintln!("agent update check failed: {error}");
-                    }
+                if let Ok(status) = agent::agent_status(&settings).await {
+                    let _ = app.emit("agent://status", &status);
                 }
             }
             tokio::time::sleep(Duration::from_secs(6 * 60 * 60)).await;
@@ -249,20 +233,6 @@ pub fn run() {
                     }
                 });
             }
-
-            let handle_for_warmup = handle.clone();
-            tauri::async_runtime::spawn(async move {
-                if let Some(state) = handle_for_warmup.try_state::<AppState>() {
-                    let settings = state
-                        .settings
-                        .lock()
-                        .map(|s| s.clone())
-                        .unwrap_or_default();
-                    if settings.harness_command.trim().is_empty() {
-                        let _ = agent::ensure_local_agent(&settings).await;
-                    }
-                }
-            });
 
             schedule_agent_auto_update(handle.clone());
             let _ = handle.emit("host://ready", true);

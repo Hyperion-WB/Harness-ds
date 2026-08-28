@@ -1,9 +1,10 @@
-import { lazy, Suspense, useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ChromeBar } from "../components/ChromeBar/ChromeBar";
 import { AppSidebar } from "../components/Sidebar/AppSidebar";
 import { SessionScene } from "../scenes/session/SessionScene";
 import { LiveLogsDrawer } from "../components/LiveLogsDrawer/LiveLogsDrawer";
 import { CommandPalette } from "../components/CommandPalette/CommandPalette";
+import { SetupWizardModal } from "../components/SetupWizard/SetupWizardModal";
 import { useAppStore } from "../stores/appStore";
 import "./WorkspaceBody.scss";
 
@@ -17,8 +18,18 @@ const NARROW_NAV_MQ = "(max-width: 760px)";
 export function WorkspaceBody() {
   const collapsed = useAppStore((s) => s.navCollapsed);
   const scene = useAppStore((s) => s.activeScene);
+  const modelProviders = useAppStore((s) => s.modelProviders);
+  const errorBanner = useAppStore((s) => s.errorBanner);
+  const [showWizard, setShowWizard] = useState(false);
   const settingsVisited = useRef(false);
   if (scene === "settings") settingsVisited.current = true;
+
+  // Auto trigger wizard on first start when no key/provider configured
+  useEffect(() => {
+    if (errorBanner === "need-key" || (modelProviders.length === 0 && !localStorage.getItem("dsh_wizard_dismissed"))) {
+      setShowWizard(true);
+    }
+  }, [errorBanner, modelProviders.length]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -65,6 +76,13 @@ export function WorkspaceBody() {
       </div>
       <LiveLogsDrawer />
       <CommandPalette />
+      <SetupWizardModal
+        isOpen={showWizard}
+        onClose={() => {
+          localStorage.setItem("dsh_wizard_dismissed", "1");
+          setShowWizard(false);
+        }}
+      />
     </div>
   );
 }

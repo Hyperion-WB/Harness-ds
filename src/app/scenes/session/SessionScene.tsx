@@ -79,24 +79,9 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
   const sessionTitle = activeSession?.title || (messages.length > 0 ? "进行中会话" : "新对话");
 
-  // Aggregate all available models from providers
+  // Aggregate all available models from active user providers
   const allAvailableModels = useMemo(() => {
-    const list: Array<{ id: string; name: string; provider: string; desc?: string; tag?: string }> = [
-      {
-        id: "deepseek-chat",
-        name: "DeepSeek-V3 (Chat)",
-        provider: "deepseek-official",
-        desc: "通用强大多语言编程与综合对话",
-        tag: "默认",
-      },
-      {
-        id: "deepseek-reasoner",
-        name: "DeepSeek-R1 (Reasoner)",
-        provider: "deepseek-official",
-        desc: "深度长链思考与高难度算法架构",
-        tag: "深度推理",
-      },
-    ];
+    const list: Array<{ id: string; name: string; provider: string; desc?: string; tag?: string }> = [];
 
     for (const p of modelProviders) {
       for (const m of p.models || []) {
@@ -106,6 +91,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             name: m,
             provider: p.displayName || p.id,
             desc: `提供商: ${p.displayName || p.id}`,
+            tag: p.id === "deepseek-official" ? "官方" : undefined,
           });
         }
       }
