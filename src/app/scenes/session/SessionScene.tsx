@@ -37,8 +37,6 @@ const HERO_SUGGESTIONS = [
 
 export function SessionScene({ active = true }: SessionSceneProps) {
   const harness = useAppStore((s) => s.harness);
-  const agent = useAppStore((s) => s.agent);
-  const updateAgentNow = useAppStore((s) => s.updateAgentNow);
   const logs = useAppStore((s) => s.logs);
   const restartHarness = useAppStore((s) => s.restartHarness);
   const workspacePath = useAppStore((s) => s.workspacePath);
@@ -71,7 +69,6 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const [connected, setConnected] = useState(false);
   const [sessionModel, setSessionModel] = useState<string>(defaultModel.model);
   const [showTopbarModelMenu, setShowTopbarModelMenu] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [viewMode, setViewMode] = useState<"engine" | "chat">("engine");
   const [iframeKey, setIframeKey] = useState<number>(0);
   const topbarModelRef = useRef<HTMLDivElement>(null);
@@ -230,108 +227,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
     }
   }, [harness.state, harness.url, activeSessionId, setMessages, setIsStreaming, setPendingQuestions, setPendingApproval]);
 
-  const [downloadError, setDownloadError] = useState<string | null>(null);
 
-  async function handleDownloadCore(forceClean = false) {
-    setIsDownloading(true);
-    setDownloadError(null);
-    try {
-      if (forceClean) {
-        await useAppStore.getState().repairAgentNow();
-      } else {
-        await updateAgentNow();
-      }
-      const updatedAgent = useAppStore.getState().agent;
-      if (!updatedAgent.installedVersion) {
-        const banner = useAppStore.getState().errorBanner;
-        setDownloadError(banner || "核心组件安装未完整完成，请检查网络后点击一键重装修复");
-        return;
-      }
-      const ws = useAppStore.getState().workspacePath;
-      if (ws) {
-        await restartHarness();
-      }
-    } catch (e: any) {
-      setDownloadError(e?.message || String(e));
-    } finally {
-      setIsDownloading(false);
-    }
-  }
-
-  // 1. Initial State: Core Engine Not Downloaded Yet
-  if (!agent.installedVersion) {
-    return (
-      <div className="dshg-session dshg-session--loading">
-        <div className="dshg-session__loading-card">
-          <div className="dshg-session__loading-spinner">
-            <FishLogo size={48} />
-          </div>
-          <h3>DeepSeek Harness 智能引擎初始化</h3>
-          <p>
-            首次运行需要下载核心 Agent 引擎组件（<code>@deepseek-ai/dsh</code>）。
-            <br />
-            核心文件将安全保存在客户端安装目录（<code>data/agent-prefix/</code>），不占用 C 盘空间。
-          </p>
-
-          {isDownloading ? (
-            <>
-              <div className="dshg-session__loading-progress">
-                <div className="dshg-session__loading-bar is-animating" />
-              </div>
-              <div className="dshg-session__loading-steps">
-                <div className="dshg-session__loading-step is-active">
-                  <span className="dshg-session__step-dot" />
-                  <span>正在从国内高速镜像源 (npmmirror) 下载核心包...</span>
-                </div>
-                <div className="dshg-session__loading-step is-active">
-                  <span className="dshg-session__step-dot" />
-                  <span>正在解压并写入客户端数据目录...</span>
-                </div>
-              </div>
-              {logs.length > 0 && (
-                <div className="dshg-session__micro-logs">
-                  <div className="dshg-session__micro-logs-head">
-                    <Terminal size={12} />
-                    <span>实时下载日志 ({logs.length} 行)</span>
-                  </div>
-                  <pre className="dshg-session__micro-logs-body">
-                    {logs.slice(-5).join("\n")}
-                  </pre>
-                </div>
-              )}
-            </>
-          ) : downloadError ? (
-            <div className="dshg-session__download-error">
-              <div className="dshg-session__error-icon">!</div>
-              <h4>下载/初始化未完成</h4>
-              <p className="dshg-session__error-desc">{downloadError}</p>
-              {logs.length > 0 && (
-                <pre className="dshg-session__error-logs">
-                  {logs.slice(-8).join("\n")}
-                </pre>
-              )}
-              <div className="dshg-session__error-actions">
-                <Button variant="primary" onClick={() => void handleDownloadCore()}>
-                  重新尝试下载
-                </Button>
-                <Button onClick={toggleLogsDrawer}>查看完整日志</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="dshg-session__download-actions">
-              <Button
-                variant="primary"
-                onClick={() => void handleDownloadCore()}
-              >
-                <Download size={15} />
-                <span>点击下载核心文件 (约需 3-5 秒)</span>
-              </Button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   if (!workspacePath && harness.state === "idle") {
     return (
@@ -403,11 +299,8 @@ export function SessionScene({ active = true }: SessionSceneProps) {
                 </pre>
               )}
               <div className="dshg-session__error-actions">
-                <Button variant="primary" onClick={() => void handleDownloadCore(true)}>
-                  一键重新安装并修复核心
-                </Button>
-                <Button onClick={() => void restartHarness()}>
-                  重试启动
+                <Button variant="primary" onClick={() => void restartHarness()}>
+                  重新启动引擎
                 </Button>
                 <Button onClick={toggleLogsDrawer}>查看完整日志</Button>
               </div>
