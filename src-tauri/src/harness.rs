@@ -380,11 +380,11 @@ async fn terminate_child(child: &mut Child) {
     {
         if let Some(pid) = child.id() {
             let mut cmd = Command::new("taskkill");
-            cmd.args(["/PID", &pid.to_string(), "/T", "/F"]);
+            cmd.args(["/F", "/T", "/PID", &pid.to_string()]);
             const CREATE_NO_WINDOW: u32 = 0x0800_0000;
             cmd.creation_flags(CREATE_NO_WINDOW);
             let _ = cmd.status().await;
-            let _ = child.wait().await;
+            let _ = timeout(Duration::from_millis(1500), child.wait()).await;
             return;
         }
     }

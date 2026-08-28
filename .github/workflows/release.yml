@@ -1,4 +1,4 @@
-name: release
+name: Release Windows
 
 on:
   push:
@@ -10,30 +10,11 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: --target aarch64-apple-darwin
-          - platform: macos-latest
-            args: --target x86_64-apple-darwin
-          - platform: ubuntu-22.04
-            args: ""
-          - platform: windows-latest
-            args: ""
-
-    runs-on: ${{ matrix.platform }}
+  release-windows:
+    runs-on: windows-latest
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential libssl-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xdg-utils
 
       - uses: pnpm/action-setup@v4
         with:
@@ -45,8 +26,6 @@ jobs:
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -55,21 +34,24 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build and upload
+      - name: Build Windows .exe Installer
         uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
-          releaseName: DeepSeek Harness ${{ github.ref_type == 'tag' && github.ref_name || format('v{0}', github.run_number) }}
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || format('v0.3.{0}', github.run_number) }}
+          releaseName: DeepSeek Harness GUI ${{ github.ref_type == 'tag' && github.ref_name || format('v0.3.{0}', github.run_number) }}
           releaseBody: |
-            Desktop shell for DeepSeek Harness (`dsh web`).
+            ## DeepSeek Harness GUI for Windows (x64)
 
-            Requires Node.js `^22.19 || >=24` on the machine.
+            ### 🚀 开箱即用
+            - 下载下方 `..._x64-setup.exe` 安装包并直接运行安装；
+            - 在「设置」中填入 API Key（或选择免 Key 的 Ollama 本地模型），选择任意工作区目录即可秒级开启 Agent 会话！
 
-            ## Notes
-            - macOS builds are unsigned in this pipeline; first open via right-click → Open if Gatekeeper blocks.
-            - Agent (`@deepseek-ai/dsh`) updates inside Settings — the shell itself is not auto-updated.
+            ### ✨ 核心特性
+            - **官方全功能引擎**：100% 完整呈现 DeepSeek-R1 深度思考链、代码 Diff 对比与工具执行；
+            - **280+ 社区插件生态**：支持官方精选与社区插件雷达一键安装升级；
+            - **多模型服务网关**：内置 DeepSeek 官方、硅基流动、Ollama、OpenRouter、Kimi 等统一凭证管理；
+            - **超低资源占用**：原生 Tauri 2 架构，无多余后台进程残留。
           releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
