@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import {
   ArrowUpCircle,
   Bot,
+  Boxes,
   Check,
   Code,
   Compass,
   Download,
   FolderSync,
+  Globe,
   Layers,
   Layout,
   Plus,
@@ -21,6 +23,7 @@ import {
 import { Button, Select } from "@/component-library";
 import { useI18n } from "@/infrastructure/i18n";
 import { useAppStore } from "@/app/stores/appStore";
+import { PluginDetailDrawer } from "@/app/components/PluginDetailDrawer/PluginDetailDrawer";
 import {
   AWESOME_RADAR_REPO,
   type CuratedPlugin,
@@ -181,6 +184,8 @@ export function PluginsSection() {
   const bundles = useAppStore((s) => s.pluginBundles);
   const mcpServers = useAppStore((s) => s.mcpServers);
   const profilePath = useAppStore((s) => s.pluginProfilePath);
+  const activeProfile = useAppStore((s) => s.activeProfile);
+  const catalogSources = useAppStore((s) => s.catalogSources);
   const dshHome = useAppStore((s) => s.dshHome);
   const harness = useAppStore((s) => s.harness);
   const refreshPlugins = useAppStore((s) => s.refreshPlugins);
@@ -200,6 +205,8 @@ export function PluginsSection() {
   const [form, setForm] = useState<McpForm>(() => emptyMcpForm());
   const [hubCategory, setHubCategory] = useState<PluginCategory>("all");
   const [hubSearch, setHubSearch] = useState("");
+  const [selectedSourceId, setSelectedSourceId] = useState<string>("official-radar");
+  const [selectedDetailPlugin, setSelectedDetailPlugin] = useState<any | null>(null);
 
   const [hubPlugins, setHubPlugins] = useState<CuratedPlugin[]>(() => getCachedCatalog().plugins);
   const [lastSyncedAt, setLastSyncedAt] = useState<number>(() => getCachedCatalog().syncedAt);
@@ -470,6 +477,31 @@ export function PluginsSection() {
           </div>
         )}
 
+        {/* Catalog Data Sources Selector */}
+        <div className="dshg-plugins__sources-bar">
+          <span className="dshg-plugins__sources-label">
+            <Globe size={13} />
+            <span>插件目录源:</span>
+          </span>
+          <div className="dshg-plugins__sources-list">
+            {catalogSources.map((source) => (
+              <button
+                key={source.id}
+                type="button"
+                className={`dshg-plugins__source-pill ${selectedSourceId === source.id ? "is-active" : ""}`}
+                onClick={() => setSelectedSourceId(source.id)}
+                title={source.description}
+              >
+                <span>{source.name}</span>
+              </button>
+            ))}
+          </div>
+          <span className="dshg-plugins__profile-target">
+            <Boxes size={12} />
+            <span>目标环境: {activeProfile}</span>
+          </span>
+        </div>
+
         {/* Hub Categories & Search Bar */}
         <div className="dshg-plugins__hub-controls">
           <div className="dshg-plugins__hub-chips">
@@ -546,6 +578,7 @@ export function PluginsSection() {
                     key={plugin.packageName}
                     className="dshg-plugins__hub-item"
                     style={{ animationDelay: `${Math.min(idx * 20, 200)}ms` }}
+                    onClick={() => setSelectedDetailPlugin(plugin)}
                   >
                     <div className="dshg-plugins__hub-item-head">
                       <div className="dshg-plugins__hub-name-group">
@@ -593,19 +626,14 @@ export function PluginsSection() {
                       )}
                     </div>
 
-                    <div className="dshg-plugins__hub-footer">
-                      {plugin.repoUrl ? (
-                        <button
-                          type="button"
-                          className="dshg-plugins__repo-link"
-                          title="查看 GitHub 源码仓库"
-                          onClick={() => void openExternal(plugin.repoUrl!)}
-                        >
-                          GitHub
-                        </button>
-                      ) : (
-                        <span />
-                      )}
+                    <div className="dshg-plugins__hub-footer" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="dshg-plugins__repo-link"
+                        onClick={() => setSelectedDetailPlugin(plugin)}
+                      >
+                        详情
+                      </button>
 
                       <div className="dshg-plugins__hub-actions">
                         {isInstalled ? (
@@ -642,8 +670,14 @@ export function PluginsSection() {
                             disabled={isInstalling || busy}
                             onClick={() => void installPackage(plugin.packageName)}
                           >
-                            <Download size={12} />
-                            <span>{isInstalling ? t("plugins.installing") : t("plugins.add")}</span>
+                            {isInstalling ? (
+                              t("plugins.installing")
+                            ) : (
+                              <>
+                                <Download size={13} />
+                                <span>{t("plugins.add")}</span>
+                              </>
+                            )}
                           </Button>
                         )}
                       </div>
@@ -655,8 +689,6 @@ export function PluginsSection() {
           )}
         </div>
       </div>
-
-
 
       {/* Custom Plugin Install */}
       <div className="dshg-plugins__install">
@@ -925,6 +957,12 @@ export function PluginsSection() {
           </Button>
         )}
       </div>
+
+      <PluginDetailDrawer
+        plugin={selectedDetailPlugin}
+        isOpen={Boolean(selectedDetailPlugin)}
+        onClose={() => setSelectedDetailPlugin(null)}
+      />
     </section>
   );
 }

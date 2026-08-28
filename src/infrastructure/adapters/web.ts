@@ -67,6 +67,11 @@ const defaultSettings = (): AppSettings => ({
   agentAutoUpdate: true,
   autoStart: false,
   globalShortcutEnabled: true,
+  presentationMode: "hyperion",
+  windowMaterial: "glass",
+  activeProfile: "web",
+  customPort: null,
+  lanExposed: false,
 });
 
 function readSettings(): AppSettings {
@@ -305,6 +310,26 @@ export const webAdapter: HostAdapter = {
   },
   async openStorageDir(path: string) {
     console.info("[WebPreview] Open storage directory:", path);
+  },
+  async listProfiles(): Promise<import("@/shared/types").ProfileInfo[]> {
+    return [
+      { name: "web", path: "C:\\Users\\.dsh\\profiles\\web", isActive: true, packageCount: 4, bundleCount: 2 },
+      { name: "desktop", path: "C:\\Users\\.dsh\\profiles\\desktop", isActive: false, packageCount: 6, bundleCount: 3 },
+      { name: "coding", path: "C:\\Users\\.dsh\\profiles\\coding", isActive: false, packageCount: 2, bundleCount: 1 },
+    ];
+  },
+  async createProfile(name: string): Promise<import("@/shared/types").ProfileInfo> {
+    return { name, path: `C:\\Users\\.dsh\\profiles\\${name}`, isActive: false, packageCount: 0, bundleCount: 0 };
+  },
+  async deleteProfile(name: string): Promise<void> {
+    console.info("[WebPreview] Delete profile:", name);
+  },
+  async switchProfile(name: string): Promise<import("@/shared/types").ProfileInfo[]> {
+    return [
+      { name: "web", path: "C:\\Users\\.dsh\\profiles\\web", isActive: name === "web", packageCount: 4, bundleCount: 2 },
+      { name: "desktop", path: "C:\\Users\\.dsh\\profiles\\desktop", isActive: name === "desktop", packageCount: 6, bundleCount: 3 },
+      { name, path: `C:\\Users\\.dsh\\profiles\\${name}`, isActive: true, packageCount: 2, bundleCount: 1 },
+    ];
   },
 };
 

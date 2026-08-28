@@ -202,5 +202,21 @@ export const tauriAdapter: HostAdapter = {
   async openStorageDir(path: string) {
     await invoke<void>("open_storage_dir", { path });
   },
+
+  async listProfiles() {
+    return invoke<import("@/shared/types").ProfileInfo[]>("list_profiles");
+  },
+
+  async createProfile(name: string) {
+    return invoke<import("@/shared/types").ProfileInfo>("create_profile", { name });
+  },
+
+  async deleteProfile(name: string) {
+    await invoke<void>("delete_profile", { name });
+  },
+
+  async switchProfile(name: string) {
+    return invoke<import("@/shared/types").ProfileInfo[]>("switch_profile", { name });
+  },
 };
 

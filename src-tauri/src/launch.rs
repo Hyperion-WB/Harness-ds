@@ -201,7 +201,11 @@ fn executable_names(name: &str) -> Vec<String> {
 
 pub fn resolve_launch(settings: &AppSettings, path_var: &str) -> LaunchSpec {
     let args = if settings.harness_args.is_empty() {
-        default_harness_args()
+        default_harness_args_for_profile(
+            &settings.active_profile,
+            settings.custom_port,
+            settings.lan_exposed,
+        )
     } else {
         settings.harness_args.clone()
     };
@@ -260,12 +264,25 @@ pub fn resolve_launch(settings: &AppSettings, path_var: &str) -> LaunchSpec {
 }
 
 pub fn default_harness_args() -> Vec<String> {
+    default_harness_args_for_profile("web", None, false)
+}
+
+pub fn default_harness_args_for_profile(
+    profile: &str,
+    custom_port: Option<u16>,
+    lan_exposed: bool,
+) -> Vec<String> {
+    let host = if lan_exposed { "0.0.0.0" } else { "127.0.0.1" };
+    let port = custom_port.unwrap_or(0).to_string();
+    let clean_profile = if profile.trim().is_empty() { "web" } else { profile.trim() };
     vec![
         "web".into(),
+        "--profile".into(),
+        clean_profile.into(),
         "--host".into(),
-        "127.0.0.1".into(),
+        host.into(),
         "--port".into(),
-        "0".into(),
+        port,
         "--no-open".into(),
     ]
 }

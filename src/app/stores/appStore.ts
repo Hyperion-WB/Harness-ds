@@ -42,8 +42,35 @@ const EMPTY_PROVIDER_KEYS: ProviderKeysStatus = {
 
 const EMPTY_DEFAULT_MODEL: DefaultModel = {
   provider: "deepseek-official",
-  model: "deepseek-chat",
+  model: "",
 };
+
+export const DEFAULT_CATALOG_SOURCES: import("@/shared/types").CatalogSource[] = [
+  {
+    id: "official-radar",
+    name: "官方生态雷达源 (Awesome Radar)",
+    url: "https://raw.githubusercontent.com/AdamPlatin123/awesome-dsh-plugins/main/radar.json",
+    kind: "official",
+    description: "DeepSeek Harness 官方与社区精选高质量生产级插件合集",
+    enabled: true,
+  },
+  {
+    id: "1024store",
+    name: "DSH 1024Store 合作源",
+    url: "https://raw.githubusercontent.com/imsai-sh/awesome-deepseek-harness-plugins/main/README.md",
+    kind: "1024store",
+    description: "汇聚全网活跃的 DSH 工具、工作流与 MCP 协议扩展",
+    enabled: true,
+  },
+  {
+    id: "dshfind",
+    name: "dshfind 实时索引源",
+    url: "https://dshfind.com/api/v1/plugins",
+    kind: "dshfind",
+    description: "npm 生态全网实时同步与包体积诊断索引源",
+    enabled: true,
+  },
+];
 
 function anyProviderKey(status: ProviderKeysStatus): boolean {
   return status.deepseek || status.openai || status.anthropic;
@@ -84,6 +111,14 @@ export interface AppStore {
   errorBanner: string | null;
   sessionMounted: boolean;
 
+  presentationMode: import("@/shared/types").PresentationMode;
+  windowMaterial: import("@/shared/types").WindowMaterial;
+  activeProfile: string;
+  profiles: import("@/shared/types").ProfileInfo[];
+  catalogSources: import("@/shared/types").CatalogSource[];
+  customPort: number | null;
+  lanExposed: boolean;
+
   // Session state
   sessions: SessionSummary[];
   activeSessionId: string | null;
@@ -100,6 +135,13 @@ export interface AppStore {
   setLogsDrawerOpen: (open: boolean) => void;
   setSessionZoom: (zoom: number) => void;
   reloadSession: () => void;
+  setPresentationMode: (mode: import("@/shared/types").PresentationMode) => Promise<void>;
+  setWindowMaterial: (material: import("@/shared/types").WindowMaterial) => Promise<void>;
+  switchProfile: (name: string) => Promise<void>;
+  createProfile: (name: string) => Promise<void>;
+  deleteProfile: (name: string) => Promise<void>;
+  refreshProfiles: () => Promise<void>;
+  setCatalogSources: (sources: import("@/shared/types").CatalogSource[]) => void;
   setActivePreset: (presetId: string) => Promise<void>;
   openWorkspace: (path?: string) => Promise<void>;
   restartHarness: () => Promise<void>;
@@ -110,6 +152,11 @@ export interface AppStore {
   applySettings: (patch: {
     theme?: Theme;
     locale?: Locale;
+    presentationMode?: string;
+    windowMaterial?: string;
+    activeProfile?: string;
+    customPort?: number | null;
+    lanExposed?: boolean;
     closeToTray?: boolean;
     harnessCommand?: string;
     harnessArgs?: string[];
@@ -202,6 +249,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
   errorBanner: null,
   sessionMounted: false,
 
+  presentationMode: "hyperion",
+  windowMaterial: "glass",
+  activeProfile: "web",
+  profiles: [],
+  catalogSources: DEFAULT_CATALOG_SOURCES,
+  customPort: null,
+  lanExposed: false,
+
   sessions: [],
   activeSessionId: null,
   messages: [],
@@ -218,7 +273,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     host.subscribeHarnessLog((line) => get().appendLog(line));
     host.subscribeAgentStatus((status) => get().setAgent(status));
     try {
-      const [settings, providerKeys, modelSnapshot, harness, agent] = await Promise.all([
+      const [settings, providerKeys, modelSnapshot, harness, agent, profiles] = await Promise.all([
         host.getSettings(),
         host.getProviderKeysStatus(),
         host.listModelProviders().catch(() => ({
@@ -228,6 +283,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         })),
         host.getHarnessStatus(),
         host.getAgentStatus().catch(() => IDLE_AGENT),
+        host.listProfiles().catch(() => []),
       ]);
       const args = settings.harnessArgs ?? [];
       const presetIdx = args.indexOf("--preset");
@@ -239,6 +295,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
         ready: true,
         locale: asLocale(settings.locale),
         theme: asTheme(settings.theme),
+        presentationMode: (settings.presentationMode as any) || "hyperion",
+        windowMaterial: (settings.windowMaterial as any) || "glass",
+        activeProfile: settings.activeProfile || "web",
+        profiles,
+        customPort: settings.customPort ?? null,
+        lanExposed: settings.lanExposed ?? false,
         recentWorkspaces: settings.recentWorkspaces,
         providerKeys,
         modelProviders: modelSnapshot.providers,
@@ -409,6 +471,58 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ harness: IDLE_HARNESS, sessionMounted: false });
   },
 
+  async setPresentationMode(mode) {
+    await get().applySettings({ presentationMode: mode });
+    set({ presentationMode: mode });
+  },
+
+  async setWindowMaterial(material) {
+    await get().applySettings({ windowMaterial: material });
+    set({ windowMaterial: material });
+  },
+
+  async switchProfile(name) {
+    try {
+      const profiles = await get().host.switchProfile(name);
+      await get().applySettings({ activeProfile: name });
+      set({ activeProfile: name, profiles });
+      await get().refreshPlugins();
+    } catch (e: any) {
+      log.error("switch profile failed", e);
+    }
+  },
+
+  async createProfile(name) {
+    try {
+      await get().host.createProfile(name);
+      await get().refreshProfiles();
+    } catch (e: any) {
+      log.error("create profile failed", e);
+    }
+  },
+
+  async deleteProfile(name) {
+    try {
+      await get().host.deleteProfile(name);
+      await get().refreshProfiles();
+    } catch (e: any) {
+      log.error("delete profile failed", e);
+    }
+  },
+
+  async refreshProfiles() {
+    try {
+      const profiles = await get().host.listProfiles();
+      set({ profiles });
+    } catch (e: any) {
+      log.error("refresh profiles failed", e);
+    }
+  },
+
+  setCatalogSources(sources) {
+    set({ catalogSources: sources });
+  },
+
   async applySettings(patch) {
     const settings = await get().host.saveSettings(patch);
     const args = settings.harnessArgs ?? get().harnessArgs;
@@ -418,6 +532,11 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({
       locale: asLocale(settings.locale),
       theme: asTheme(settings.theme),
+      presentationMode: (settings.presentationMode as any) || get().presentationMode,
+      windowMaterial: (settings.windowMaterial as any) || get().windowMaterial,
+      activeProfile: settings.activeProfile || get().activeProfile,
+      customPort: settings.customPort !== undefined ? settings.customPort : get().customPort,
+      lanExposed: settings.lanExposed !== undefined ? settings.lanExposed : get().lanExposed,
       closeToTray: settings.closeToTray,
       harnessCommand: settings.harnessCommand,
       harnessArgs: args,

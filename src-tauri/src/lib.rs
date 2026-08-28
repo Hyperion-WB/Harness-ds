@@ -4,6 +4,7 @@ mod harness;
 mod launch;
 mod paths;
 mod plugins;
+mod profiles;
 mod providers;
 mod settings;
 
@@ -135,6 +136,10 @@ pub fn run() {
             commands::get_storage_info,
             commands::clear_cache,
             commands::open_storage_dir,
+            commands::list_profiles,
+            commands::create_profile,
+            commands::delete_profile,
+            commands::switch_profile,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

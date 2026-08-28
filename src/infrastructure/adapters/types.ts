@@ -53,5 +53,9 @@ export interface HostAdapter {
   getStorageInfo(): Promise<import("@/shared/types").StorageInfo>;
   clearCache(): Promise<import("@/shared/types").StorageInfo>;
   openStorageDir(path: string): Promise<void>;
+  listProfiles(): Promise<import("@/shared/types").ProfileInfo[]>;
+  createProfile(name: string): Promise<import("@/shared/types").ProfileInfo>;
+  deleteProfile(name: string): Promise<void>;
+  switchProfile(name: string): Promise<import("@/shared/types").ProfileInfo[]>;
 }
 

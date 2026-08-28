@@ -14,7 +14,7 @@ import {
   Terminal,
   Trash2,
   X,
-  Zap,
+  Sparkles,
 } from "lucide-react";
 import { FishLogo } from "@/component-library";
 import { useI18n } from "@/infrastructure/i18n";
@@ -28,13 +28,13 @@ export function AppSidebar() {
   const toggleNav = useAppStore((s) => s.toggleNav);
   const activeScene = useAppStore((s) => s.activeScene);
   const setScene = useAppStore((s) => s.setScene);
+  const activeProfile = useAppStore((s) => s.activeProfile);
   const workspacePath = useAppStore((s) => s.workspacePath);
   const recentWorkspaces = useAppStore((s) => s.recentWorkspaces);
   const openWorkspace = useAppStore((s) => s.openWorkspace);
   const restartHarness = useAppStore((s) => s.restartHarness);
   const harness = useAppStore((s) => s.harness);
   const defaultModel = useAppStore((s) => s.defaultModel);
-  const activePreset = useAppStore((s) => s.activePreset);
   const isLogsOpen = useAppStore((s) => s.isLogsDrawerOpen);
   const toggleLogsDrawer = useAppStore((s) => s.toggleLogsDrawer);
   const host = useAppStore((s) => s.host);
@@ -366,16 +366,28 @@ export function AppSidebar() {
 
       {/* 6. Bottom Dock: Model/Preset + Runtime Status + Settings */}
       <div className="dshg-sidebar__dock">
-        {/* Model / Preset Info Chip */}
-        <div
-          className="dshg-sidebar__collapsible-block dshg-sidebar__model-chip"
-          onClick={() => setScene("settings")}
-          title="点击前往设置切换模型与预设"
-        >
-          <Zap size={13} className="dshg-sidebar__model-icon" />
-          <span className="dshg-sidebar__model-name">{defaultModel.model}</span>
-          <span className="dshg-sidebar__preset-badge">{activePreset}</span>
-        </div>
+        {/* Model / Profile Info Chip */}
+        {defaultModel.model ? (
+          <div
+            className="dshg-sidebar__collapsible-block dshg-sidebar__model-chip"
+            onClick={() => setScene("settings")}
+            title="点击前往设置切换模型与 Profile 环境"
+          >
+            <Sparkles size={13} className="dshg-sidebar__model-icon" />
+            <span className="dshg-sidebar__model-name">{defaultModel.model}</span>
+            <span className="dshg-sidebar__preset-badge">{activeProfile}</span>
+          </div>
+        ) : (
+          <div
+            className="dshg-sidebar__collapsible-block dshg-sidebar__model-chip is-empty"
+            onClick={() => setScene("settings")}
+            title="尚未配置模型，点击前往接入 API"
+          >
+            <Sparkles size={13} className="dshg-sidebar__model-icon" />
+            <span className="dshg-sidebar__model-name">接入模型 API</span>
+            <span className="dshg-sidebar__preset-badge">Profile: {activeProfile}</span>
+          </div>
+        )}
 
         {/* Runtime Status Row */}
         <div className="dshg-sidebar__runtime-bar">

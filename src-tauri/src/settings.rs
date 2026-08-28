@@ -30,6 +30,16 @@ pub struct AppSettings {
     pub theme: String,
     #[serde(default = "default_locale")]
     pub locale: String,
+    #[serde(default = "default_presentation_mode")]
+    pub presentation_mode: String,
+    #[serde(default = "default_window_material")]
+    pub window_material: String,
+    #[serde(default = "default_active_profile")]
+    pub active_profile: String,
+    #[serde(default)]
+    pub custom_port: Option<u16>,
+    #[serde(default)]
+    pub lan_exposed: bool,
     #[serde(default)]
     pub close_to_tray: bool,
     #[serde(default)]
@@ -61,6 +71,18 @@ fn default_locale() -> String {
     "zh".into()
 }
 
+fn default_presentation_mode() -> String {
+    "hyperion".into()
+}
+
+fn default_window_material() -> String {
+    "glass".into()
+}
+
+fn default_active_profile() -> String {
+    "web".into()
+}
+
 fn default_agent_channel() -> String {
     "latest".into()
 }
@@ -76,6 +98,11 @@ impl Default for AppSettings {
             harness_args: Vec::new(),
             theme: default_theme(),
             locale: default_locale(),
+            presentation_mode: default_presentation_mode(),
+            window_material: default_window_material(),
+            active_profile: default_active_profile(),
+            custom_port: None,
+            lan_exposed: false,
             close_to_tray: false,
             recent_workspaces: Vec::new(),
             agent_channel: default_agent_channel(),

@@ -1,7 +1,26 @@
 export type Locale = "zh" | "en";
 export type Theme = "dark" | "light" | "system";
+export type PresentationMode = "hyperion" | "compatibility" | "extended" | "advanced";
+export type WindowMaterial = "mica" | "mica-alt" | "acrylic" | "glass" | "solid";
 export type SceneId = "welcome" | "session" | "settings";
 export type HarnessState = "idle" | "starting" | "ready" | "error";
+
+export interface ProfileInfo {
+  name: string;
+  path: string;
+  isActive: boolean;
+  packageCount: number;
+  bundleCount: number;
+}
+
+export interface CatalogSource {
+  id: string;
+  name: string;
+  url: string;
+  kind: "official" | "1024store" | "dshfind" | "custom";
+  description?: string;
+  enabled: boolean;
+}
 
 export interface RecentWorkspace {
   path: string;
@@ -14,6 +33,11 @@ export interface AppSettings {
   harnessArgs: string[];
   theme: Theme | string;
   locale: Locale | string;
+  presentationMode: PresentationMode | string;
+  windowMaterial: WindowMaterial | string;
+  activeProfile: string;
+  customPort?: number | null;
+  lanExposed?: boolean;
   closeToTray: boolean;
   recentWorkspaces: RecentWorkspace[];
   agentChannel: string;
@@ -158,6 +182,11 @@ export interface SettingsPatch {
   harnessArgs?: string[];
   theme?: string;
   locale?: string;
+  presentationMode?: string;
+  windowMaterial?: string;
+  activeProfile?: string;
+  customPort?: number | null;
+  lanExposed?: boolean;
   closeToTray?: boolean;
   recentWorkspaces?: RecentWorkspace[];
   agentChannel?: string;

@@ -645,4 +645,41 @@ pub async fn open_storage_dir(path: String) -> Result<(), String> {
     reveal_in_file_manager(path).await
 }
 
+#[tauri::command]
+pub async fn list_profiles(state: State<'_, AppState>) -> Result<Vec<crate::profiles::ProfileInfo>, String> {
+    let settings = lock_settings(&state)?;
+    crate::profiles::list_profiles(&settings.active_profile)
+}
+
+#[tauri::command]
+pub async fn create_profile(name: String) -> Result<crate::profiles::ProfileInfo, String> {
+    crate::profiles::create_profile(&name, None)
+}
+
+#[tauri::command]
+pub async fn delete_profile(name: String) -> Result<(), String> {
+    crate::profiles::delete_profile(&name)
+}
+
+#[tauri::command]
+pub async fn switch_profile(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    name: String,
+) -> Result<Vec<crate::profiles::ProfileInfo>, String> {
+    let mut settings = lock_settings(&state)?.clone();
+    settings.active_profile = name.clone();
+    crate::settings::save_settings(&settings)?;
+    *state.settings.lock().map_err(|e| e.to_string())? = settings.clone();
+
+    // Restart harness on new profile if currently running
+    let current = state.harness.snapshot().await;
+    if let Some(workspace) = current.workspace {
+        let _ = state.harness.stop(&app).await;
+        let _ = state.harness.start(&app, &settings, workspace).await;
+    }
+
+    crate::profiles::list_profiles(&name)
+}
+
 
