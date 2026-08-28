@@ -266,6 +266,7 @@ pub fn default_harness_args() -> Vec<String> {
         "127.0.0.1".into(),
         "--port".into(),
         "0".into(),
+        "--no-open".into(),
     ]
 }
 

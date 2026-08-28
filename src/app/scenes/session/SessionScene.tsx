@@ -5,7 +5,10 @@ import {
   Code,
   Download,
   Folder,
+  LayoutGrid,
   Loader2,
+  MessageSquare,
+  RefreshCw,
   Search,
   Sparkles,
   Terminal,
@@ -69,6 +72,8 @@ export function SessionScene({ active = true }: SessionSceneProps) {
   const [sessionModel, setSessionModel] = useState<string>(defaultModel.model);
   const [showTopbarModelMenu, setShowTopbarModelMenu] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [viewMode, setViewMode] = useState<"engine" | "chat">("engine");
+  const [iframeKey, setIframeKey] = useState<number>(0);
   const topbarModelRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.sessionId === activeSessionId);
@@ -509,6 +514,39 @@ export function SessionScene({ active = true }: SessionSceneProps) {
         </div>
 
         <div className="dshg-session__actions">
+          {harness.state === "ready" && harness.url && (
+            <div className="dshg-session__view-toggle">
+              <button
+                type="button"
+                className={`dshg-session__view-btn ${viewMode === "engine" ? "is-active" : ""}`}
+                title="官方全功能引擎视图 (完整支持思维链、Diff、所有插件)"
+                onClick={() => setViewMode("engine")}
+              >
+                <LayoutGrid size={13} />
+                <span>全能引擎</span>
+              </button>
+              <button
+                type="button"
+                className={`dshg-session__view-btn ${viewMode === "chat" ? "is-active" : ""}`}
+                title="极简轻量对话视图"
+                onClick={() => setViewMode("chat")}
+              >
+                <MessageSquare size={13} />
+                <span>轻量对话</span>
+              </button>
+              {viewMode === "engine" && (
+                <button
+                  type="button"
+                  className="dshg-session__action-btn"
+                  title="刷新引擎页面"
+                  onClick={() => setIframeKey((k) => k + 1)}
+                >
+                  <RefreshCw size={13} />
+                </button>
+              )}
+            </div>
+          )}
+
           {workspacePath && (
             <>
               <button
@@ -541,7 +579,7 @@ export function SessionScene({ active = true }: SessionSceneProps) {
             </>
           )}
 
-          {messages.length > 0 && (
+          {messages.length > 0 && viewMode === "chat" && (
             <button
               type="button"
               className="dshg-session__action-btn"
@@ -568,65 +606,79 @@ export function SessionScene({ active = true }: SessionSceneProps) {
 
       {/* Main Chat Body */}
       <main className="dshg-session__main">
-        {messages.length === 0 ? (
-          <div className="dshg-session__hero">
-            <div className="dshg-session__hero-logo">
-              <FishLogo size={46} />
-            </div>
-            <h1 className="dshg-session__hero-title">有什么我可以帮您编写的？</h1>
-            <p className="dshg-session__hero-subtitle">
-              原生融合 DeepSeek 核心 Agent 与代码工具链，直接输入提示词即可开始。
-            </p>
-
-            <div className="dshg-session__suggestions">
-              {HERO_SUGGESTIONS.map((item, idx) => {
-                const IconComp = item.icon;
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="dshg-session__suggestion-card"
-                    onClick={() => void sendPrompt(item.prompt)}
-                  >
-                    <div className="dshg-session__suggestion-header">
-                      <div className="dshg-session__suggestion-icon">
-                        <IconComp size={15} />
-                      </div>
-                      <strong className="dshg-session__suggestion-title">{item.title}</strong>
-                    </div>
-                    <span className="dshg-session__suggestion-prompt">{item.prompt}</span>
-                  </button>
-                );
-              })}
-            </div>
+        {harness.state === "ready" && harness.url && viewMode === "engine" ? (
+          <div className="dshg-session__engine-frame">
+            <iframe
+              key={iframeKey}
+              src={harness.url}
+              className="dshg-session__webview-iframe"
+              title="DeepSeek Harness Official Native Engine"
+              allow="clipboard-read; clipboard-write"
+            />
           </div>
         ) : (
-          <ChatMessageList
-            messages={messages}
-            pendingQuestions={pendingQuestions}
-            onAnswerQuestions={respondToQuestion}
-            pendingApproval={pendingApproval}
-            onResolveApproval={resolveApproval}
-            isStreaming={isStreaming}
-          />
-        )}
+          <>
+            {messages.length === 0 ? (
+              <div className="dshg-session__hero">
+                <div className="dshg-session__hero-logo">
+                  <FishLogo size={46} />
+                </div>
+                <h1 className="dshg-session__hero-title">有什么我可以帮您编写的？</h1>
+                <p className="dshg-session__hero-subtitle">
+                  原生融合 DeepSeek 核心 Agent 与代码工具链，直接输入提示词即可开始。
+                </p>
 
-        {/* Bottom Input Composer */}
-        <div className="dshg-session__composer-wrap">
-          <ChatInput
-            onSend={(text) => void sendPrompt(text)}
-            onCancel={() => void cancelGeneration()}
-            isStreaming={isStreaming}
-            disabled={false}
-            connected={connected}
-            onReconnect={() => void restartHarness()}
-            activePreset={activePreset}
-            onSelectPreset={(p) => void setActivePreset(p)}
-            activeModel={sessionModel}
-            onSelectModel={(m) => setSessionModel(m)}
-            availableModels={allAvailableModels}
-          />
-        </div>
+                <div className="dshg-session__suggestions">
+                  {HERO_SUGGESTIONS.map((item, idx) => {
+                    const IconComp = item.icon;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="dshg-session__suggestion-card"
+                        onClick={() => void sendPrompt(item.prompt)}
+                      >
+                        <div className="dshg-session__suggestion-header">
+                          <div className="dshg-session__suggestion-icon">
+                            <IconComp size={15} />
+                          </div>
+                          <strong className="dshg-session__suggestion-title">{item.title}</strong>
+                        </div>
+                        <span className="dshg-session__suggestion-prompt">{item.prompt}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <ChatMessageList
+                messages={messages}
+                pendingQuestions={pendingQuestions}
+                onAnswerQuestions={respondToQuestion}
+                pendingApproval={pendingApproval}
+                onResolveApproval={resolveApproval}
+                isStreaming={isStreaming}
+              />
+            )}
+
+            {/* Bottom Input Composer */}
+            <div className="dshg-session__composer-wrap">
+              <ChatInput
+                onSend={(text) => void sendPrompt(text)}
+                onCancel={() => void cancelGeneration()}
+                isStreaming={isStreaming}
+                disabled={false}
+                connected={connected}
+                onReconnect={() => void restartHarness()}
+                activePreset={activePreset}
+                onSelectPreset={(p) => void setActivePreset(p)}
+                activeModel={sessionModel}
+                onSelectModel={(m) => setSessionModel(m)}
+                availableModels={allAvailableModels}
+              />
+            </div>
+          </>
+        )}
       </main>
     </div>
   );
